@@ -39,21 +39,9 @@ func (s userService) Login(req models.LoginRequest) (string, error) {
 		return "", err
 	}
 
-	status, err := s.rp.CheckUserInSessions(user.ID)
+	err = s.rp.UpdateSession(user.ID, session)
 	if err != nil {
 		return "", err
-	}
-
-	if status {
-		err = s.rp.UpdateSession(user.ID, session)
-		if err != nil {
-			return "", err
-		}
-	} else {
-		err = s.rp.CreateSession(user.ID, session)
-		if err != nil {
-			return "", err
-		}
 	}
 
 	return session, err

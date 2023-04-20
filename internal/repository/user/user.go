@@ -7,12 +7,15 @@ import (
 
 type UserRepo interface {
 	Create(user models.User) error
-	GetByLogin(login, password string) (models.User, error)
 	CreateSession(userID int, session string) error
-	DeleteSession(session string) error
 	UpdateSession(userID int, session string) error
+
 	CheckUserInSessions(userID int) (bool, error)
+
+	GetByLogin(login, password string) (models.User, error)
 	GetUserBySession(session string) (models.User, error)
+
+	DeleteSession(session string) error
 }
 
 type userRepo struct {
@@ -39,12 +42,4 @@ func (r userRepo) GetByLogin(login, password string) (models.User, error) {
 
 	err := row.Scan(&user.ID, &user.Login, &user.Password, &user.Email)
 	return user, err
-}
-
-func (r userRepo) DeleteSession(session string) error {
-	_, err := r.db.Exec("delete from sessions where session = ?", session)
-	if err != nil {
-		return err
-	}
-	return err
 }

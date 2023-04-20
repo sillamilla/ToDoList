@@ -8,7 +8,8 @@ func (r userRepo) CreateSession(userID int, session string) error {
 }
 
 func (r userRepo) UpdateSession(userID int, session string) error {
-	_, err := r.db.Exec("update sessions set session = ? where user_id = ?", session, userID)
+	_, err := r.db.Exec("INSERT INTO sessions (user_id, session) VALUES (?, ?) ON CONFLICT (user_id) DO UPDATE SET session = ?", userID, session, session)
+
 	return err
 }
 
@@ -41,4 +42,12 @@ func (r userRepo) GetUserBySession(session string) (models.User, error) {
 	}
 
 	return user, err
+}
+
+func (r userRepo) DeleteSession(session string) error {
+	_, err := r.db.Exec("delete from sessions where session = ?", session)
+	if err != nil {
+		return err
+	}
+	return err
 }
