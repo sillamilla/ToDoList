@@ -3,18 +3,19 @@ package user
 import (
 	"ToDoWithKolya/internal/models"
 	"database/sql"
+	"time"
 )
 
 type UserRepo interface {
 	Create(user models.User) error
-	CreateSession(userID int, session string) error
-	UpdateSession(userID int, session string) error
 
 	CheckUserInSessions(userID int) (bool, error)
-
 	GetByLogin(login, password string) (models.User, error)
 	GetUserBySession(session string) (models.User, error)
 
+	CreateSession(userID int, session string) error
+	UpdateSession(userID int, session string) error
+	GetSessionLastActive(session string) (time.Time, error)
 	DeleteSession(session string) error
 }
 

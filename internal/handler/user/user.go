@@ -26,20 +26,20 @@ func (h Handler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	var newuser models.User
+	var newUser models.User
 
-	err = json.Unmarshal(readAll, &newuser)
+	err = json.Unmarshal(readAll, &newUser)
 	if err != nil {
 		helper.SendError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	if errs := newuser.Validate(); len(errs) > 0 {
+	if errs := newUser.Validate(); len(errs) > 0 {
 		helper.SendError(w, http.StatusUnprocessableEntity, nil)
 		return
 	}
 
-	err = h.srv.Register(newuser)
+	err = h.srv.Register(newUser)
 	if err != nil {
 		helper.SendError(w, http.StatusInternalServerError, err)
 		return

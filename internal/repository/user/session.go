@@ -1,16 +1,26 @@
 package user
 
-import "ToDoWithKolya/internal/models"
+import (
+	"ToDoWithKolya/internal/models"
+	"time"
+)
 
 func (r userRepo) CreateSession(userID int, session string) error {
 	_, err := r.db.Exec("insert into sessions(user_id, session) values (?, ?)", userID, session)
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r userRepo) UpdateSession(userID int, session string) error {
 	_, err := r.db.Exec("INSERT INTO sessions (user_id, session) VALUES (?, ?) ON CONFLICT (user_id) DO UPDATE SET session = ?", userID, session, session)
+	if err != nil {
+		return err
+	}
 
-	return err
+	return nil
 }
 
 func (r userRepo) CheckUserInSessions(userID int) (bool, error) {
@@ -26,7 +36,7 @@ func (r userRepo) CheckUserInSessions(userID int) (bool, error) {
 		return false, row.Err()
 	}
 
-	return true, row.Err()
+	return true, nil
 }
 
 func (r userRepo) GetUserBySession(session string) (models.User, error) {
@@ -41,7 +51,7 @@ func (r userRepo) GetUserBySession(session string) (models.User, error) {
 		return models.User{}, err
 	}
 
-	return user, err
+	return user, nil
 }
 
 func (r userRepo) DeleteSession(session string) error {
@@ -49,5 +59,21 @@ func (r userRepo) DeleteSession(session string) error {
 	if err != nil {
 		return err
 	}
-	return err
+
+	return nil
+}
+
+func (r userRepo) GetSessionLastActive(session string) (time.Time, error) {
+	row := r.db.QueryRow("select time_activity from sessions where session = ?", session)
+	if row.Err() != nil {
+		return time.Time{}, row.Err()
+	}
+
+	var sessionTime time.Time
+	err := row.Scan(&sessionTime)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return sessionTime, nil
 }
