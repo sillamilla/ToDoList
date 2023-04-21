@@ -43,7 +43,7 @@ func (h Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if errs := newtask.Validate(); len(errs) > 0 {
-		helper.SendError(w, http.StatusUnprocessableEntity, nil)
+		helper.SendError(w, http.StatusUnprocessableEntity, fmt.Errorf("validate error"))
 		return
 	}
 
@@ -52,6 +52,39 @@ func (h Handler) Create(w http.ResponseWriter, r *http.Request) {
 		helper.SendError(w, http.StatusInternalServerError, err)
 		return
 	}
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
+	readAll, err := io.ReadAll(r.Body)
+	if err != nil {
+		helper.SendError(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer r.Body.Close()
+
+	var newtask models.Task
+	err = json.Unmarshal(readAll, &newtask)
+	if err != nil {
+		helper.SendError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if errs := newtask.Validate(); len(errs) > 0 {
+		helper.SendError(w, http.StatusUnprocessableEntity, fmt.Errorf("validate error"))
+		return
+	}
+
+	user := r.Context().Value("user").(models.User)
+
+	taskID, err := helper.GetIntFromURL(r, "id")
+	if err != nil {
+		helper.SendError(w, http.StatusBadRequest, err)
+		return
+	}
+	newtask.ID = taskID
+
+	h.srv.Edit(newtask, user.ID)
 	w.WriteHeader(http.StatusCreated)
 }
 

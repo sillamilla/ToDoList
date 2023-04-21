@@ -7,36 +7,12 @@ import (
 
 func (r userRepo) CreateSession(userID int, session string) error {
 	_, err := r.db.Exec("insert into sessions(user_id, session) values (?, ?)", userID, session)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
-func (r userRepo) UpdateSession(userID int, session string) error {
+func (r userRepo) UpsertSession(userID int, session string) error {
 	_, err := r.db.Exec("INSERT INTO sessions (user_id, session) VALUES (?, ?) ON CONFLICT (user_id) DO UPDATE SET session = ?", userID, session, session)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r userRepo) CheckUserInSessions(userID int) (bool, error) {
-	var result int
-	row := r.db.QueryRow("select exists( select 1 from sessions where user_id = ?)", userID)
-	if row.Err() != nil {
-		return false, row.Err()
-	}
-
-	row.Scan(&result)
-
-	if result == 0 {
-		return false, row.Err()
-	}
-
-	return true, nil
+	return err
 }
 
 func (r userRepo) GetUserBySession(session string) (models.User, error) {
@@ -56,15 +32,11 @@ func (r userRepo) GetUserBySession(session string) (models.User, error) {
 
 func (r userRepo) DeleteSession(session string) error {
 	_, err := r.db.Exec("delete from sessions where session = ?", session)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (r userRepo) GetSessionLastActive(session string) (time.Time, error) {
-	row := r.db.QueryRow("select time_activity from sessions where session = ?", session)
+	row := r.db.QueryRow("select created_at from sessions where session = ?", session)
 	if row.Err() != nil {
 		return time.Time{}, row.Err()
 	}

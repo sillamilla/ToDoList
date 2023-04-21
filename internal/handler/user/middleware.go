@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"time"
 	"unicode/utf8"
 )
 
@@ -24,6 +25,20 @@ func (h Handler) Authorization(next http.HandlerFunc) http.HandlerFunc {
 		}
 		ctx := r.Context()
 		ctxWithUser := context.WithValue(ctx, "user", user)
+
+		lastActive, err := h.srv.GetSessionLastActive(key)
+		if err != nil {
+			log.Println("Не удалось получить время последней активности сессии:", err)
+		}
+
+		sessionExpireTime := lastActive.Add(60 * time.Minute)
+		if sessionExpireTime.Before(time.Now()) {
+			err = h.srv.Logout(key)
+			if err != nil {
+				log.Println("Не удалось выполнить выход из сессии:", err)
+			}
+			return
+		}
 
 		r = r.WithContext(ctxWithUser)
 		next(w, r)

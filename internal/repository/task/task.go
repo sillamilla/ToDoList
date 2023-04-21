@@ -7,7 +7,7 @@ import (
 
 type TaskRepo interface {
 	Create(task models.Task) error
-	Update(task models.Task) error
+	Update(task models.Task, userID int) error
 
 	GetTasksByUserID(userID int) ([]models.Task, error)
 	GetByUserID(id int) (models.Task, error)
@@ -51,12 +51,13 @@ func (r taskRepo) DeleteByTaskID(id int, userID int) error {
 	return err
 }
 
-func (r taskRepo) Update(task models.Task) error {
+func (r taskRepo) Update(task models.Task, userID int) error {
 	_, err := r.db.Exec(
-		"update tasks set title = ?, description = ? where id = ?",
+		"update tasks set title = ?, description = ? where id = ? and user_id = ?",
 		task.Title,
 		task.Description,
 		task.ID,
+		userID,
 	)
 	return err
 }

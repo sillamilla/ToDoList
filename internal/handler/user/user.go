@@ -47,6 +47,39 @@ func (h Handler) Register(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
+	readAll, err := io.ReadAll(r.Body)
+	if err != nil {
+		helper.SendError(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer r.Body.Close()
+
+	var newuser models.User
+	err = json.Unmarshal(readAll, &newuser)
+	if err != nil {
+		helper.SendError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if errs := newuser.Validate(); len(errs) > 0 {
+		helper.SendError(w, http.StatusUnprocessableEntity, fmt.Errorf("validate error"))
+		return
+	}
+
+	session := r.Header.Get("Authorization")
+	user, err := h.srv.GetUserBySession(session)
+	if err != nil {
+		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("failed session, err: %e", err))
+		return
+	}
+
+	newuser.ID = user.ID
+
+	h.srv.Update(newuser)
+	w.WriteHeader(http.StatusCreated)
+}
+
 func (h Handler) Login(w http.ResponseWriter, r *http.Request) {
 	readAll, err := io.ReadAll(r.Body)
 	if err != nil {
