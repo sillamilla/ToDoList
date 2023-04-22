@@ -4,14 +4,14 @@ import (
 	"ToDoWithKolya/internal/handler"
 	"ToDoWithKolya/internal/repository"
 	"ToDoWithKolya/internal/service"
-	"ToDoWithKolya/pkg/db"
+	"ToDoWithKolya/pkg/sql_lite"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 )
 
 func main() {
-	database, err := db.New()
+	database, err := sql_lite.New()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -25,7 +25,7 @@ func main() {
 	auth := hnd.UserHandler.Authorization
 	//users
 	r.HandleFunc("/users", hnd.UserHandler.Register).Methods(http.MethodPost)
-	r.HandleFunc("/users/edit/{id}", auth(hnd.UserHandler.Edit)).Methods(http.MethodPost)
+	//r.HandleFunc("/users/edit/{id}", auth(hnd.UserHandler.Edit)).Methods(http.MethodPost)
 	r.HandleFunc("/users/login", hnd.UserHandler.Login).Methods(http.MethodPost)
 	r.HandleFunc("/users", auth(hnd.UserHandler.Logout)).Methods(http.MethodDelete)
 
