@@ -1,14 +1,13 @@
 package task
 
 import (
+	"ToDoWithKolya/internal/ctxpkg"
 	"ToDoWithKolya/internal/handler/helper"
 	"ToDoWithKolya/internal/models"
 	"ToDoWithKolya/internal/service/task"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 )
 
@@ -21,29 +20,14 @@ func NewHandler(service task.Service) Handler {
 }
 
 func (h Handler) Create(w http.ResponseWriter, r *http.Request) {
-	user, ok := helper.UserFromContext(r.Context())
-	if !ok {
-		helper.SendError(w, http.StatusForbidden, fmt.Errorf("nil user"))
-		return
-	}
-	readAll, err := io.ReadAll(r.Body)
-	if err != nil {
-		helper.SendError(w, http.StatusInternalServerError, err)
-		return
-	}
-	defer r.Body.Close()
-	//такой сесії немає
 	var newtask models.Task
-	newtask.UserID = user.ID
-
-	err = json.Unmarshal(readAll, &newtask)
+	validationErrs, err := helper.UnmarshalAndValidate(r.Body, &newtask)
 	if err != nil {
-		helper.SendError(w, http.StatusBadRequest, err)
+		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("unmarshalAndValidate err: %w", err))
 		return
 	}
-
-	if errs := newtask.Validate(); len(errs) > 0 {
-		helper.SendError(w, http.StatusUnprocessableEntity, nil)
+	if validationErrs != nil {
+		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("validation err: %s", validationErrs))
 		return
 	}
 
@@ -52,6 +36,36 @@ func (h Handler) Create(w http.ResponseWriter, r *http.Request) {
 		helper.SendError(w, http.StatusInternalServerError, err)
 		return
 	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
+	user, ok := ctxpkg.UserFromContext(r.Context())
+	if !ok {
+		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("userFromContext err"))
+		return
+	}
+
+	var updatedTask models.Task
+	validationErrs, err := helper.UnmarshalAndValidate(r.Body, &updatedTask)
+	if err != nil {
+		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("validation err: %w", err))
+		return
+	}
+	if validationErrs != nil {
+		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("validation err: %s", validationErrs))
+		return
+	}
+
+	taskID, err := helper.GetIntFromURL(r, "id")
+	if err != nil {
+		helper.SendError(w, http.StatusBadRequest, err)
+		return
+	}
+	updatedTask.ID = taskID
+
+	h.srv.Edit(updatedTask, user.ID)
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -59,6 +73,12 @@ func (h Handler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 	id, err := helper.GetIntFromURL(r, "id")
 	if err != nil {
 		helper.SendError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	user, ok := ctxpkg.UserFromContext(r.Context())
+	if !ok {
+		helper.SendError(w, http.StatusUnauthorized, fmt.Errorf("nil users"))
 		return
 	}
 
@@ -72,12 +92,6 @@ func (h Handler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := helper.UserFromContext(r.Context())
-	if !ok {
-		helper.SendError(w, http.StatusUnauthorized, fmt.Errorf("nil user"))
-		return
-	}
-
 	if user.ID != task.UserID {
 		helper.SendError(w, http.StatusForbidden, fmt.Errorf("not your task"))
 		return
@@ -87,8 +101,6 @@ func (h Handler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 		helper.SendError(w, http.StatusInternalServerError, err)
 		return
 	}
-	//нема таски з таким id
-	//нема такой сесії
 }
 
 func (h Handler) DeleteByTaskID(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +110,7 @@ func (h Handler) DeleteByTaskID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := helper.UserFromContext(r.Context())
+	user, ok := ctxpkg.UserFromContext(r.Context())
 	if !ok {
 		helper.SendError(w, http.StatusInternalServerError, err)
 		return
@@ -114,9 +126,9 @@ func (h Handler) DeleteByTaskID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) GetTasksByUserID(w http.ResponseWriter, r *http.Request) {
-	user, b := helper.UserFromContext(r.Context())
+	user, b := ctxpkg.UserFromContext(r.Context())
 	if !b {
-		helper.SendError(w, http.StatusForbidden, fmt.Errorf("nil user"))
+		helper.SendError(w, http.StatusForbidden, fmt.Errorf("nil users"))
 	}
 
 	tasks, err := h.srv.GetTasksByUserID(user.ID)

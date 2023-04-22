@@ -2,18 +2,18 @@ package handler
 
 import (
 	"ToDoWithKolya/internal/handler/task"
-	"ToDoWithKolya/internal/handler/user"
+	"ToDoWithKolya/internal/handler/users"
 	"ToDoWithKolya/internal/service"
 )
 
 type Handler struct {
 	TaskHandler task.Handler
-	UserHandler user.Handler
+	UserHandler users.Handler
 }
 
 func New(srv *service.Service) Handler {
 	return Handler{
 		TaskHandler: task.NewHandler(srv.TaskSrv),
-		UserHandler: user.NewHandler(srv.UserSrv),
+		UserHandler: users.NewHandler(srv.UserSrv),
 	}
 }

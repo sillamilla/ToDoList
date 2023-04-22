@@ -2,16 +2,24 @@ package helper
 
 import (
 	"ToDoWithKolya/internal/models"
-	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
 )
 
 func SendError(w http.ResponseWriter, status int, err error) {
+	switch {
+	case errors.Is(err, models.ErrNotFound):
+		status = http.StatusNotFound
+	case errors.Is(err, models.ErrUnauthorized):
+		status = http.StatusUnauthorized
+	}
+
 	if status != http.StatusInternalServerError {
 		fmt.Fprintf(w, "error: %s", err)
 	}
@@ -20,11 +28,6 @@ func SendError(w http.ResponseWriter, status int, err error) {
 	if err != nil {
 		log.Println(err)
 	}
-}
-
-func UserFromContext(ctx context.Context) (models.User, bool) {
-	user, ok := ctx.Value("user").(models.User)
-	return user, ok
 }
 
 func GetIntFromURL(r *http.Request, key string) (int, error) {
@@ -48,4 +51,26 @@ func SendJson(w http.ResponseWriter, data interface{}, status int) error {
 	w.Write(marshal)
 	w.WriteHeader(status)
 	return nil
+}
+
+type Validator interface {
+	Validate() []string
+}
+
+func UnmarshalAndValidate(r io.ReadCloser, v Validator) ([]string, error) {
+	readAll, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+
+	err = json.Unmarshal(readAll, v)
+	if err != nil {
+		return nil, err
+	}
+	if errs := v.Validate(); len(errs) > 0 {
+		return errs, nil
+	}
+
+	return nil, nil
 }

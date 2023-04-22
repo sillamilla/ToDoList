@@ -1,18 +1,22 @@
-package user
+package users
 
 import (
 	"ToDoWithKolya/internal/models"
+	"ToDoWithKolya/internal/repository"
 	"database/sql"
+	"time"
 )
 
 type UserRepo interface {
 	Create(user models.User) error
+
 	GetByLogin(login, password string) (models.User, error)
-	CreateSession(userID int, session string) error
-	DeleteSession(session string) error
-	UpdateSession(userID int, session string) error
-	CheckUserInSessions(userID int) (bool, error)
 	GetUserBySession(session string) (models.User, error)
+
+	CreateSession(userID int, session string) error
+	UpsertSession(userID int, session string) error
+	GetSessionLastActive(session string) (time.Time, error)
+	DeleteSession(session string) error
 }
 
 type userRepo struct {
@@ -26,25 +30,17 @@ func Repo(db *sql.DB) UserRepo {
 func (r userRepo) Create(user models.User) error {
 	_, err := r.db.Exec("insert into users(login, password, email) values (?, ?, ?)", user.Login, user.Password, user.Email)
 
-	return err
+	return repository.Err(err)
 }
 
 func (r userRepo) GetByLogin(login, password string) (models.User, error) {
 	row := r.db.QueryRow("select * from users where login = ? and password = ?", login, password)
-
 	if row.Err() != nil {
-		return models.User{}, row.Err()
+		return models.User{}, repository.Err(row.Err())
 	}
+
 	var user models.User
-
 	err := row.Scan(&user.ID, &user.Login, &user.Password, &user.Email)
-	return user, err
-}
 
-func (r userRepo) DeleteSession(session string) error {
-	_, err := r.db.Exec("delete from sessions where session = ?", session)
-	if err != nil {
-		return err
-	}
-	return err
+	return user, repository.Err(err)
 }
