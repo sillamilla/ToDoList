@@ -1,14 +1,14 @@
-package user
+package users
 
 import (
 	"ToDoWithKolya/internal/models"
+	"ToDoWithKolya/internal/repository"
 	"database/sql"
 	"time"
 )
 
 type UserRepo interface {
 	Create(user models.User) error
-	Update(user models.User) error
 
 	GetByLogin(login, password string) (models.User, error)
 	GetUserBySession(session string) (models.User, error)
@@ -30,28 +30,17 @@ func Repo(db *sql.DB) UserRepo {
 func (r userRepo) Create(user models.User) error {
 	_, err := r.db.Exec("insert into users(login, password, email) values (?, ?, ?)", user.Login, user.Password, user.Email)
 
-	return err
-}
-
-func (r userRepo) Update(user models.User) error {
-	_, err := r.db.Exec(
-		"update users set login = ?, password = ?, email = ? where id = ?",
-		user.Login,
-		user.Password,
-		user.Email,
-		user.ID,
-	)
-	return err
+	return repository.Err(err)
 }
 
 func (r userRepo) GetByLogin(login, password string) (models.User, error) {
 	row := r.db.QueryRow("select * from users where login = ? and password = ?", login, password)
-
 	if row.Err() != nil {
-		return models.User{}, row.Err()
+		return models.User{}, repository.Err(row.Err())
 	}
-	var user models.User
 
+	var user models.User
 	err := row.Scan(&user.ID, &user.Login, &user.Password, &user.Email)
-	return user, err
+
+	return user, repository.Err(err)
 }

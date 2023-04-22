@@ -1,15 +1,15 @@
-package user
+package users
 
 import (
 	"ToDoWithKolya/internal/models"
-	"ToDoWithKolya/internal/repository/user"
+	"ToDoWithKolya/internal/repository/users"
+	"errors"
 	"fmt"
 	"time"
 )
 
 type Service interface {
 	Register(user models.User) error
-	Update(user models.User) error
 	Login(req models.LoginRequest) (string, error)
 	Logout(session string) error
 
@@ -19,31 +19,29 @@ type Service interface {
 }
 
 type userService struct {
-	rp user.UserRepo
+	rp users.UserRepo
 }
 
-func NewUserService(rp user.UserRepo) Service {
+func NewUserService(rp users.UserRepo) Service {
 	return userService{rp: rp}
 }
 
 func (s userService) Register(user models.User) error {
+	user.Password = HashGenerate(user.Password)
+
 	if err := s.rp.Create(user); err != nil {
 		return fmt.Errorf("register err: %w", err)
 	}
 	return nil
 }
 
-func (s userService) Update(user models.User) error {
-	if err := s.rp.Update(user); err != nil {
-		return fmt.Errorf("update err: %w", err)
-	}
-	return nil
-}
-
 func (s userService) Login(req models.LoginRequest) (string, error) {
-	user, err := s.rp.GetByLogin(req.Login, req.Password)
+	user, err := s.rp.GetByLogin(req.Login, HashGenerate(req.Password))
 	if err != nil {
-		return "User not fiend, invalid login or password", err
+		if errors.Is(err, models.ErrNotFound) {
+			return "", fmt.Errorf(" invalid login or password, err: %w", models.ErrUnauthorized)
+		}
+		return "", fmt.Errorf("user not found, invalid login or password, err: %w", err)
 	}
 
 	session, err := GenerateSession()
@@ -71,7 +69,7 @@ func (s userService) Logout(session string) error {
 func (s userService) GetUserBySession(session string) (models.User, error) {
 	bySession, err := s.rp.GetUserBySession(session)
 	if err != nil {
-		return models.User{}, fmt.Errorf("get user by session err: %w", err)
+		return models.User{}, fmt.Errorf("get users by session err: %w", err)
 	}
 
 	return bySession, nil

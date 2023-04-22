@@ -1,9 +1,9 @@
-package user
+package users
 
 import (
 	"ToDoWithKolya/internal/handler/helper"
 	"ToDoWithKolya/internal/models"
-	"ToDoWithKolya/internal/service/user"
+	"ToDoWithKolya/internal/service/users"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,31 +11,22 @@ import (
 )
 
 type Handler struct {
-	srv user.Service
+	srv users.Service
 }
 
-func NewHandler(service user.Service) Handler {
+func NewHandler(service users.Service) Handler {
 	return Handler{srv: service}
 }
 
 func (h Handler) Register(w http.ResponseWriter, r *http.Request) {
-	readAll, err := io.ReadAll(r.Body)
-	if err != nil {
-		helper.SendError(w, http.StatusInternalServerError, err)
-		return
-	}
-	defer r.Body.Close()
-
 	var newUser models.User
-
-	err = json.Unmarshal(readAll, &newUser)
+	validationErrs, err := helper.UnmarshalAndValidate(r.Body, &newUser)
 	if err != nil {
-		helper.SendError(w, http.StatusBadRequest, err)
+		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("validation err: %w", err))
 		return
 	}
-
-	if errs := newUser.Validate(); len(errs) > 0 {
-		helper.SendError(w, http.StatusUnprocessableEntity, nil)
+	if validationErrs != nil {
+		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("validation err: %s", validationErrs))
 		return
 	}
 
@@ -47,39 +38,6 @@ func (h Handler) Register(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
-	readAll, err := io.ReadAll(r.Body)
-	if err != nil {
-		helper.SendError(w, http.StatusInternalServerError, err)
-		return
-	}
-	defer r.Body.Close()
-
-	var newuser models.User
-	err = json.Unmarshal(readAll, &newuser)
-	if err != nil {
-		helper.SendError(w, http.StatusBadRequest, err)
-		return
-	}
-
-	if errs := newuser.Validate(); len(errs) > 0 {
-		helper.SendError(w, http.StatusUnprocessableEntity, fmt.Errorf("validate error"))
-		return
-	}
-
-	session := r.Header.Get("Authorization")
-	user, err := h.srv.GetUserBySession(session)
-	if err != nil {
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("failed session, err: %e", err))
-		return
-	}
-
-	newuser.ID = user.ID
-
-	h.srv.Update(newuser)
-	w.WriteHeader(http.StatusCreated)
-}
-
 func (h Handler) Login(w http.ResponseWriter, r *http.Request) {
 	readAll, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -88,15 +46,15 @@ func (h Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	var req models.LoginRequest
-	if err = json.Unmarshal(readAll, &req); err != nil {
+	var newUser models.LoginRequest
+	if err = json.Unmarshal(readAll, &newUser); err != nil {
 		helper.SendError(w, http.StatusBadRequest, err)
 		return
 	}
 
 	//todo validate, wrong email or password(sql: no rows in result set)
 
-	session, err := h.srv.Login(req)
+	session, err := h.srv.Login(newUser)
 	if err != nil {
 		helper.SendError(w, http.StatusInternalServerError, err)
 		return

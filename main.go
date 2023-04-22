@@ -23,11 +23,11 @@ func main() {
 	hnd := handler.New(srv)
 
 	auth := hnd.UserHandler.Authorization
-	//user
-	r.HandleFunc("/user", hnd.UserHandler.Register).Methods(http.MethodPost)
-	r.HandleFunc("/user/edit/{id}", auth(hnd.UserHandler.Edit)).Methods(http.MethodPost)
-	r.HandleFunc("/user/login", hnd.UserHandler.Login).Methods(http.MethodPost)
-	r.HandleFunc("/user", auth(hnd.UserHandler.Logout)).Methods(http.MethodDelete)
+	//users
+	r.HandleFunc("/users", hnd.UserHandler.Register).Methods(http.MethodPost)
+	r.HandleFunc("/users/edit/{id}", auth(hnd.UserHandler.Edit)).Methods(http.MethodPost)
+	r.HandleFunc("/users/login", hnd.UserHandler.Login).Methods(http.MethodPost)
+	r.HandleFunc("/users", auth(hnd.UserHandler.Logout)).Methods(http.MethodDelete)
 
 	//todo Перевіряти чи сесія цього юзера ідентична сесії .зера якого ми хочемо модефікувати, інаккше кік
 	//task
