@@ -1,4 +1,4 @@
-package db
+package sql_lite
 
 import (
 	"database/sql"

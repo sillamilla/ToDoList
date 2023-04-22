@@ -2,7 +2,6 @@ package task
 
 import (
 	"ToDoWithKolya/internal/models"
-	"ToDoWithKolya/internal/repository"
 	"database/sql"
 )
 
@@ -32,24 +31,24 @@ func (r taskRepo) Create(task models.Task) error {
 		task.Title,
 		task.Description,
 	)
-	return repository.Err(err)
+	return models.DBErr(err)
 }
 
 func (r taskRepo) GetByUserID(id int) (models.Task, error) {
 	row := r.db.QueryRow("select * from tasks where user_id = ?", id)
-	if row.Err() != nil {
-		return models.Task{}, repository.Err(row.Err())
+	if models.DBErr(row.Err()) != nil {
+		return models.Task{}, models.DBErr(row.Err())
 	}
 
 	var task models.Task
 
 	err := row.Scan(&task.ID, &task.UserID, &task.Title, &task.Description, &task.CreatedDate)
-	return task, repository.Err(err)
+	return task, models.DBErr(err)
 }
 
 func (r taskRepo) DeleteByTaskID(id int, userID int) error {
 	_, err := r.db.Exec("delete from tasks where id = ? and user_id = ?", id, userID)
-	return repository.Err(err)
+	return models.DBErr(err)
 }
 
 func (r taskRepo) Update(task models.Task, userID int) error {
@@ -60,13 +59,13 @@ func (r taskRepo) Update(task models.Task, userID int) error {
 		task.ID,
 		userID,
 	)
-	return repository.Err(err)
+	return models.DBErr(err)
 }
 
 func (r taskRepo) GetTasksByUserID(userID int) ([]models.Task, error) {
 	rows, err := r.db.Query("select * from tasks t where t.user_id = ?", userID)
 	if err != nil {
-		return nil, repository.Err(err)
+		return nil, err
 	}
 
 	var tasks []models.Task
@@ -74,23 +73,23 @@ func (r taskRepo) GetTasksByUserID(userID int) ([]models.Task, error) {
 		var task models.Task
 		err = rows.Scan(&task.ID, &task.UserID, &task.Title, &task.Description, &task.CreatedDate)
 		if err != nil {
-			return nil, repository.Err(err)
+			return nil, models.DBErr(err)
 		}
 
 		tasks = append(tasks, task)
 	}
 
-	return tasks, repository.Err(err)
+	return tasks, models.DBErr(err)
 }
 
 func (r taskRepo) GetByID(id int) (models.Task, error) {
 	row := r.db.QueryRow("select * from tasks where id = ?", id)
-	if row.Err() != nil {
-		return models.Task{}, repository.Err(row.Err())
+	if models.DBErr(row.Err()) != nil {
+		return models.Task{}, models.DBErr(row.Err())
 	}
 
 	var task models.Task
 
 	err := row.Scan(&task.ID, &task.UserID, &task.Title, &task.Description, &task.CreatedDate)
-	return task, repository.Err(err)
+	return task, models.DBErr(err)
 }
