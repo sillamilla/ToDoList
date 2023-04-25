@@ -1,7 +1,8 @@
 package main
 
 import (
-	"ToDoWithKolya/internal/handler"
+	"ToDoWithKolya/internal/handler/api"
+	"ToDoWithKolya/internal/handler/ui"
 	"ToDoWithKolya/internal/repository"
 	"ToDoWithKolya/internal/service"
 	"ToDoWithKolya/pkg/sql_lite"
@@ -20,21 +21,34 @@ func main() {
 
 	repo := repository.New(database)
 	srv := service.New(repo)
-	hnd := handler.New(srv)
 
-	auth := hnd.UserHandler.Authorization
-	//users
-	r.HandleFunc("/users", hnd.UserHandler.Register).Methods(http.MethodPost)
-	//r.HandleFunc("/users/edit/{id}", auth(hnd.UserHandler.Edit)).Methods(http.MethodPost)
-	r.HandleFunc("/users/login", hnd.UserHandler.Login).Methods(http.MethodPost)
-	r.HandleFunc("/users", auth(hnd.UserHandler.Logout)).Methods(http.MethodDelete)
+	{
+		apiHnd := api.New(srv)
+		api := r.PathPrefix("/api").Subrouter()
+		auth := apiHnd.UserHandler.Authorization
 
-	//todo Перевіряти чи сесія цього юзера ідентична сесії .зера якого ми хочемо модефікувати, інаккше кік
-	//task
-	r.HandleFunc("/task", auth(hnd.TaskHandler.Create)).Methods(http.MethodPost)
-	r.HandleFunc("/task/edit/{id}", auth(hnd.TaskHandler.Edit)).Methods(http.MethodPost)
-	r.HandleFunc("/tasks", auth(hnd.TaskHandler.GetTasksByUserID)).Methods(http.MethodGet)
-	r.HandleFunc("/task/{id}", auth(hnd.TaskHandler.GetTaskByID)).Methods(http.MethodGet)
-	r.HandleFunc("/task/{id}", auth(hnd.TaskHandler.DeleteByTaskID)).Methods(http.MethodDelete)
+		api.HandleFunc("/user", apiHnd.UserHandler.Register).Methods(http.MethodPost)
+		api.HandleFunc("/user/login", apiHnd.UserHandler.Login).Methods(http.MethodPost)
+		api.HandleFunc("/user", auth(apiHnd.UserHandler.Logout)).Methods(http.MethodDelete)
+
+		api.HandleFunc("/task", auth(apiHnd.TaskHandler.Create)).Methods(http.MethodPost)
+		api.HandleFunc("/task/edit/{id}", auth(apiHnd.TaskHandler.Edit)).Methods(http.MethodPost)
+		api.HandleFunc("/tasks", auth(apiHnd.TaskHandler.GetTasksByUserID)).Methods(http.MethodGet)
+		api.HandleFunc("/task/{id}", auth(apiHnd.TaskHandler.GetTaskByID)).Methods(http.MethodGet)
+		api.HandleFunc("/task/{id}", auth(apiHnd.TaskHandler.DeleteByTaskID)).Methods(http.MethodDelete)
+
+	}
+
+	{
+		uiHnd := ui.New(srv)
+
+		r.HandleFunc("/users", uiHnd.UserHandler.SignIn).Methods(http.MethodGet)
+		r.HandleFunc("/users/login", uiHnd.UserHandler.SignUp).Methods(http.MethodGet)
+
+		r.HandleFunc("/tasks", uiHnd.TaskHandler.Home).Methods(http.MethodGet)
+		r.HandleFunc("/task", uiHnd.TaskHandler.Create).Methods(http.MethodPost)
+		r.HandleFunc("/task/edit/{id}", uiHnd.TaskHandler.Edit).Methods(http.MethodPost)
+	}
+
 	http.ListenAndServe(":8080", r)
 }

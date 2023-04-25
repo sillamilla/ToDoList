@@ -66,10 +66,11 @@ func UnmarshalAndValidate(r io.ReadCloser, v Validator) ([]string, error) {
 
 	err = json.Unmarshal(readAll, v)
 	if err != nil {
-		return nil, err
+		return nil, err //badreq
 	}
+
 	if errs := v.Validate(); len(errs) > 0 {
-		return errs, nil
+		return errs, nil //entity
 	}
 
 	return nil, nil

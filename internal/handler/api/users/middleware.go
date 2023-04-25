@@ -1,8 +1,9 @@
 package users
 
 import (
+	"ToDoWithKolya/internal/handler/api/helper"
 	"context"
-	"log"
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -11,15 +12,13 @@ func (h Handler) Authorization(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		key := r.Header.Get("Authorization")
 		if len(key) != 44 {
-			w.WriteHeader(http.StatusUnauthorized)
-			log.Printf("Authorization: Key error, key=%s", key)
+			helper.SendError(w, http.StatusUnauthorized, fmt.Errorf("key, err: %s", key))
 			return
 		}
-		//todo провірити " " провірити на лен key
+
 		user, err := h.srv.GetUserBySession(key)
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			log.Printf("Authorization: GetUserBySession error, key=%s, err=%v", key, err)
+			helper.SendError(w, http.StatusUnauthorized, fmt.Errorf("user by session, key: %s \n err: %v", key, err))
 			return
 		}
 
@@ -28,15 +27,15 @@ func (h Handler) Authorization(next http.HandlerFunc) http.HandlerFunc {
 
 		lastActive, err := h.srv.GetSessionLastActive(key)
 		if err != nil {
-			log.Println("Не удалось получить время последней активности сессии:", err)
+			helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("last activie, key: %s \n err: %v", key, err))
 			return
 		}
 
-		sessionExpireTime := lastActive.Add(60 * time.Minute)
+		sessionExpireTime := lastActive.Add(180 * time.Minute)
 		if sessionExpireTime.Before(time.Now()) {
 			err = h.srv.Logout(key)
 			if err != nil {
-				log.Println("Не удалось выполнить выход из сессии:", err)
+				helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("logout, err: %w", err))
 			}
 			return
 		}

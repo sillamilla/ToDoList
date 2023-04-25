@@ -3,7 +3,6 @@ package users
 import (
 	"ToDoWithKolya/internal/models"
 	"ToDoWithKolya/internal/repository/users"
-	"errors"
 	"fmt"
 	"time"
 )
@@ -38,20 +37,20 @@ func (s userService) Register(user models.User) error {
 func (s userService) Login(req models.LoginRequest) (string, error) {
 	user, err := s.rp.GetByLogin(req.Login, HashGenerate(req.Password))
 	if err != nil {
-		if errors.Is(err, models.ErrNotFound) {
-			return "", fmt.Errorf(" invalid login or password, err: %w", models.ErrUnauthorized)
-		}
-		return "", fmt.Errorf("user not found, invalid login or password, err: %w", err)
+		//if errors.Is(err, models.ErrNotFound) {
+		//	return "", fmt.Errorf(" invalid login or password, err: %w", models.ErrUnauthorized)
+		//}
+		return "", fmt.Errorf("invalid login or password, err: %w", err)
 	}
 
 	session, err := GenerateSession()
 	if err != nil {
-		return "Generate session err", err
+		return "", fmt.Errorf("generate session, err: %w", err)
 	}
 
 	err = s.rp.UpsertSession(user.ID, session)
 	if err != nil {
-		return "Upsert session error", err
+		return "", fmt.Errorf("upsert session error, err: %w", err)
 	}
 
 	return session, err
