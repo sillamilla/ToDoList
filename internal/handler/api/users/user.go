@@ -30,7 +30,7 @@ func (h Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.srv.Register(newUser)
+	_, err = h.srv.Register(newUser)
 	if err != nil {
 		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("register, err: %w", err))
 		return

@@ -41,13 +41,16 @@ func main() {
 
 	{
 		uiHnd := ui.New(srv)
+		auth := uiHnd.UserHandler.Authorization
 
-		r.HandleFunc("/users", uiHnd.UserHandler.SignIn).Methods(http.MethodGet)
-		r.HandleFunc("/users/login", uiHnd.UserHandler.SignUp).Methods(http.MethodGet)
+		r.HandleFunc("/sign-up", uiHnd.UserHandler.SignUpPost).Methods(http.MethodPost)
+		r.HandleFunc("/sign-up", uiHnd.UserHandler.SignUp).Methods(http.MethodGet)
+		r.HandleFunc("/sign-in", uiHnd.UserHandler.SignInPost).Methods(http.MethodPost)
+		r.HandleFunc("/sign-in", uiHnd.UserHandler.SignIn).Methods(http.MethodGet)
 
-		r.HandleFunc("/tasks", uiHnd.TaskHandler.Home).Methods(http.MethodGet)
-		r.HandleFunc("/task", uiHnd.TaskHandler.Create).Methods(http.MethodPost)
-		r.HandleFunc("/task/edit/{id}", uiHnd.TaskHandler.Edit).Methods(http.MethodPost)
+		r.HandleFunc("/", auth(uiHnd.HomePage)).Methods(http.MethodPost)
+		r.HandleFunc("/task/{id}", auth(uiHnd.TaskHandler.Task)).Methods(http.MethodGet)
+		//r.HandleFunc("/task/edit/{id}", uiHnd.TaskHandler.Edit).Methods(http.MethodPost)
 	}
 
 	http.ListenAndServe(":8080", r)
