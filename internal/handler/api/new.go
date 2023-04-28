@@ -1,8 +1,8 @@
-package handler
+package api
 
 import (
-	"ToDoWithKolya/internal/handler/task"
-	"ToDoWithKolya/internal/handler/users"
+	"ToDoWithKolya/internal/handler/api/task"
+	"ToDoWithKolya/internal/handler/api/users"
 	"ToDoWithKolya/internal/service"
 )
 

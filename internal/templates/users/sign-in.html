@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<h1>SighIn</h1>
+{{if eq . "false" }}
+<p style="color: red"> Wrong username or password</p>
+{{end}}
+
+<form method="post">
+    <label for="username">username</label>
+    <input type="text" name="username" id="username">
+
+    <label for="password">password</label>
+    <input type="password" name="password" id="password">
+
+    <button type="submit">sign-up</button>
+</form>
+</body>
+</html>

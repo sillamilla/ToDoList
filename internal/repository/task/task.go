@@ -65,7 +65,7 @@ func (r taskRepo) Update(task models.Task, userID int) error {
 func (r taskRepo) GetTasksByUserID(userID int) ([]models.Task, error) {
 	rows, err := r.db.Query("select * from tasks t where t.user_id = ?", userID)
 	if err != nil {
-		return nil, err
+		return nil, models.DBErr(err)
 	}
 
 	var tasks []models.Task

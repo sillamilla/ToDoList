@@ -3,13 +3,12 @@ package users
 import (
 	"ToDoWithKolya/internal/models"
 	"ToDoWithKolya/internal/repository/users"
-	"errors"
 	"fmt"
 	"time"
 )
 
 type Service interface {
-	Register(user models.User) error
+	Register(user models.User) (string, error)
 	Login(req models.LoginRequest) (string, error)
 	Logout(session string) error
 
@@ -26,32 +25,41 @@ func NewUserService(rp users.UserRepo) Service {
 	return userService{rp: rp}
 }
 
-func (s userService) Register(user models.User) error {
+func (s userService) Register(user models.User) (string, error) {
+	old := user.Password
 	user.Password = HashGenerate(user.Password)
 
 	if err := s.rp.Create(user); err != nil {
-		return fmt.Errorf("register err: %w", err)
+		return "", fmt.Errorf("register err: %w", err)
 	}
-	return nil
+	session, err := s.Login(models.LoginRequest{
+		Login:    user.Login,
+		Password: old,
+	})
+	if err != nil {
+		return "", fmt.Errorf("registe:login: error, err: %w", err)
+	}
+
+	return session, nil
 }
 
 func (s userService) Login(req models.LoginRequest) (string, error) {
 	user, err := s.rp.GetByLogin(req.Login, HashGenerate(req.Password))
 	if err != nil {
-		if errors.Is(err, models.ErrNotFound) {
-			return "", fmt.Errorf(" invalid login or password, err: %w", models.ErrUnauthorized)
-		}
-		return "", fmt.Errorf("user not found, invalid login or password, err: %w", err)
+		//if errors.Is(err, models.ErrNotFound) {
+		//	return "", fmt.Errorf(" invalid login or password, err: %w", models.ErrUnauthorized)
+		//}
+		return "", fmt.Errorf("invalid login or password, err: %w", err)
 	}
 
 	session, err := GenerateSession()
 	if err != nil {
-		return "Generate session err", err
+		return "", fmt.Errorf("generate session, err: %w", err)
 	}
 
 	err = s.rp.UpsertSession(user.ID, session)
 	if err != nil {
-		return "Upsert session error", err
+		return "", fmt.Errorf("upsert session error, err: %w", err)
 	}
 
 	return session, err
