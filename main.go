@@ -48,7 +48,7 @@ func main() {
 		r.HandleFunc("/sign-in", uiHnd.UserHandler.SignInPost).Methods(http.MethodPost)
 		r.HandleFunc("/sign-in", uiHnd.UserHandler.SignIn).Methods(http.MethodGet)
 
-		r.HandleFunc("/", auth(uiHnd.HomePage)).Methods(http.MethodPost)
+		r.HandleFunc("/", auth(uiHnd.HomePage)).Methods(http.MethodGet)
 		r.HandleFunc("/task/{id}", auth(uiHnd.TaskHandler.Task)).Methods(http.MethodGet)
 		//r.HandleFunc("/task/edit/{id}", uiHnd.TaskHandler.Edit).Methods(http.MethodPost)
 	}

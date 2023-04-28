@@ -11,8 +11,8 @@ import (
 func (h Handler) Authorization(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, err := r.Cookie("session")
-		if len(session.Value) != 44 {
-			helper.SendError(w, http.StatusUnauthorized, fmt.Errorf("key, err: %s", session))
+		if session == nil || len(session.Value) != 44 {
+			http.Redirect(w, r, "/sign-in", http.StatusPermanentRedirect)
 			return
 		}
 
@@ -21,9 +21,6 @@ func (h Handler) Authorization(next http.HandlerFunc) http.HandlerFunc {
 			helper.SendError(w, http.StatusUnauthorized, fmt.Errorf("user by session, key: %s \n err: %v", session, err))
 			return
 		}
-
-		ctx := r.Context()
-		ctxWithUser := context.WithValue(ctx, "users", user)
 
 		lastActive, err := h.srv.GetSessionLastActive(session.Value)
 		if err != nil {
@@ -40,6 +37,8 @@ func (h Handler) Authorization(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		ctx := r.Context()
+		ctxWithUser := context.WithValue(ctx, "users", user)
 		r = r.WithContext(ctxWithUser)
 		next(w, r)
 	}

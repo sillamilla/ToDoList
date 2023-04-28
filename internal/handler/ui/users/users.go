@@ -21,6 +21,7 @@ func NewHandler(service users.Service) Handler {
 	if err != nil {
 		panic(err)
 	}
+
 	signIn, err := template.ParseFiles("./internal/templates/users/sign-in.html")
 	if err != nil {
 		panic(err)

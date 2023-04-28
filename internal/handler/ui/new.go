@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"ToDoWithKolya/internal/ctxpkg"
 	"ToDoWithKolya/internal/handler/ui/tasks"
 	"ToDoWithKolya/internal/handler/ui/users"
 	"ToDoWithKolya/internal/service"
@@ -13,7 +14,7 @@ type Handler struct {
 	TaskHandler tasks.Handler
 	UserHandler users.Handler
 	Home        *template.Template
-	srv         service.Service
+	srv         *service.Service
 }
 
 func New(srv *service.Service) Handler {
@@ -26,23 +27,24 @@ func New(srv *service.Service) Handler {
 		TaskHandler: tasks.NewHandler(srv.TaskSrv),
 		UserHandler: users.NewHandler(srv.UserSrv),
 		Home:        home,
+		srv:         srv,
 	}
 }
 
 func (h Handler) HomePage(w http.ResponseWriter, r *http.Request) {
-	//user, ok := ctxpkg.UserFromContext(r.Context())
-	//if !ok {
-	//	http.Redirect(w, r, "/sign-in", http.StatusPermanentRedirect)
-	//	return
-	//}
-	//
-	//users, err := h.srv.TaskSrv.GetTasksByUserID(user.ID)
-	//if err != nil {
-	//	http.Error(w, "Internal Server Error", 500)
-	//	return
-	//}
+	user, ok := ctxpkg.UserFromContext(r.Context())
+	if !ok {
+		http.Redirect(w, r, "/sign-in", http.StatusPermanentRedirect)
+		return
+	}
 
-	err := h.Home.Execute(w, nil)
+	tasks, err := h.srv.TaskSrv.GetTasksByUserID(user.ID)
+	if err != nil {
+		log.Fatalf("err: %s", err)
+		return
+	}
+
+	err = h.Home.Execute(w, tasks)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, "Internal Server Error", 500)
