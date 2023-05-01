@@ -48,9 +48,18 @@ func main() {
 		r.HandleFunc("/sign-in", uiHnd.UserHandler.SignInPost).Methods(http.MethodPost)
 		r.HandleFunc("/sign-in", uiHnd.UserHandler.SignIn).Methods(http.MethodGet)
 
+		r.HandleFunc("/logout", auth(uiHnd.UserHandler.Logout)).Methods(http.MethodGet)
+
 		r.HandleFunc("/", auth(uiHnd.HomePage)).Methods(http.MethodGet)
-		r.HandleFunc("/task/{id}", auth(uiHnd.TaskHandler.Task)).Methods(http.MethodGet)
-		//r.HandleFunc("/task/edit/{id}", uiHnd.TaskHandler.Edit).Methods(http.MethodPost)
+
+		r.HandleFunc("/create", auth(uiHnd.TaskHandler.CreatePost)).Methods(http.MethodPost)
+		r.HandleFunc("/create", auth(uiHnd.TaskHandler.Create)).Methods(http.MethodGet)
+
+		r.HandleFunc("/edit/{id}", auth(uiHnd.TaskHandler.EditPost)).Methods(http.MethodPost)
+		r.HandleFunc("/edit/{id}", auth(uiHnd.TaskHandler.Edit)).Methods(http.MethodGet)
+
+		r.HandleFunc("/task/delete/{id}", auth(uiHnd.TaskHandler.Delete)).Methods(http.MethodGet)
+
 	}
 
 	http.ListenAndServe(":8080", r)

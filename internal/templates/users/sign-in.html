@@ -2,22 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In</title>
+    <!-- Import Tailwind CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.16/tailwind.min.css">
 </head>
-<body>
-<h1>SighIn</h1>
-{{if eq . "false" }}
-<p style="color: red"> Wrong username or password</p>
-{{end}}
-
-<form method="post">
-    <label for="username">username</label>
-    <input type="text" name="username" id="username">
-
-    <label for="password">password</label>
-    <input type="password" name="password" id="password">
-
-    <button type="submit">sign-up</button>
-</form>
+<body class="bg-gray-800 text-gray-200 font-sans">
+<div class="max-w-lg mx-auto py-12">
+    <h1 class="text-3xl font-bold mb-4">Sign In</h1>
+    <form class="w-full max-w-md" action="/sign-in" method="POST">
+        <div class="flex flex-wrap mb-6">
+            <label for="username" class="block text-gray-500 font-medium mb-2">Username</label>
+            <input id="username" type="text" name="username" class="form-input bg-gray-700 rounded-md border-gray-600 w-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+        </div>
+        <div class="flex flex-wrap mb-6">
+            <label for="password" class="block text-gray-500 font-medium mb-2">Password</label>
+            <input id="password" type="password" name="password" class="form-input bg-gray-700 rounded-md border-gray-600 w-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+        </div>
+        <div class="flex items-center justify-between">
+            <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-200 focus:outline-none">Sign In</button>
+            {{if eq . "false" }}
+                <p class="text-red-500 text-sm font-medium ml-1 inline-flex">Wrong username or password</p>
+            {{end}}
+        </div>
+    </form>
+</div>
 </body>
 </html>

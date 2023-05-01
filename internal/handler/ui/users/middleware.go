@@ -28,7 +28,7 @@ func (h Handler) Authorization(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		sessionExpireTime := lastActive.Add(180 * time.Minute)
+		sessionExpireTime := lastActive.Add(30 * time.Minute)
 		if sessionExpireTime.Before(time.Now()) {
 			err = h.srv.Logout(session.Value)
 			if err != nil {
