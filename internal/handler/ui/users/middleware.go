@@ -1,7 +1,7 @@
 package users
 
 import (
-	"ToDoWithKolya/internal/handler/api/helper"
+	"ToDoWithKolya/internal/templates/errs"
 	"context"
 	"fmt"
 	"net/http"
@@ -18,13 +18,13 @@ func (h Handler) Authorization(next http.HandlerFunc) http.HandlerFunc {
 
 		user, err := h.srv.GetUserBySession(session.Value)
 		if err != nil {
-			helper.SendError(w, http.StatusUnauthorized, fmt.Errorf("user by session, key: %s \n err: %v", session, err))
+			errs.ErrorWrap(w, fmt.Errorf("user by session, err: %w", err), http.StatusInternalServerError)
 			return
 		}
 
 		lastActive, err := h.srv.GetSessionLastActive(session.Value)
 		if err != nil {
-			helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("last activie, key: %s \n err: %v", session, err))
+			errs.ErrorWrap(w, fmt.Errorf("last activie, err: %w", err), http.StatusInternalServerError)
 			return
 		}
 
@@ -32,7 +32,7 @@ func (h Handler) Authorization(next http.HandlerFunc) http.HandlerFunc {
 		if sessionExpireTime.Before(time.Now()) {
 			err = h.srv.Logout(session.Value)
 			if err != nil {
-				helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("logout, err: %w", err))
+				errs.ErrorWrap(w, fmt.Errorf("logout, err: %w", err), http.StatusInternalServerError)
 			}
 			return
 		}

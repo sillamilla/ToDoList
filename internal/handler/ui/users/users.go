@@ -5,7 +5,6 @@ import (
 	"ToDoWithKolya/internal/service/users"
 	"ToDoWithKolya/internal/templates/errs"
 	"errors"
-	"fmt"
 	"html/template"
 	"net/http"
 )
@@ -34,11 +33,11 @@ func NewHandler(service users.Service) Handler {
 }
 
 func (h Handler) SignUp(w http.ResponseWriter, r *http.Request) {
-	session, _ := r.Cookie("session")
-	if session == nil {
-		errs.ErrorWrap(w, fmt.Errorf("u already logined"), http.StatusForbidden)
-		return
-	}
+	//session, _ := r.Cookie("session")
+	//if session != nil {
+	//	errs.ErrorWrap(w, fmt.Errorf("u already logined"), http.StatusForbidden)
+	//	return
+	//}
 
 	err := h.signUp.Execute(w, nil)
 	if err != nil {
@@ -77,11 +76,11 @@ func (h Handler) SignUpPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) SignIn(w http.ResponseWriter, r *http.Request) {
-	session, _ := r.Cookie("session")
-	if session == nil {
-		errs.ErrorWrap(w, fmt.Errorf("u already logined"), http.StatusForbidden)
-		return
-	}
+	//session, _ := r.Cookie("session")
+	//if session != nil {
+	//	errs.ErrorWrap(w, fmt.Errorf("u already logined"), http.StatusForbidden)
+	//	return
+	//}
 
 	ok := r.URL.Query().Get("status")
 	err := h.signIn.Execute(w, ok)

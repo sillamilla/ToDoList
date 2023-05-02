@@ -1,6 +1,7 @@
 package errs
 
 import (
+	"ToDoWithKolya/internal/handler/api/helper"
 	"fmt"
 	"html/template"
 	"log"
@@ -12,10 +13,6 @@ type Errors struct {
 	Status    int
 	Err       string
 	Text      string
-}
-
-type Validator interface {
-	Validate() []string
 }
 
 func ErrorWrap(w http.ResponseWriter, validErr error, status int) {
@@ -37,7 +34,7 @@ func ErrorWrap(w http.ResponseWriter, validErr error, status int) {
 
 }
 
-func Validate(w http.ResponseWriter, v Validator) bool {
+func Validate(w http.ResponseWriter, v helper.Validator) bool {
 	if errs := v.Validate(); len(errs) != 0 {
 		var validatorTextErr string
 		for _, text := range errs {

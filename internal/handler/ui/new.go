@@ -5,8 +5,8 @@ import (
 	"ToDoWithKolya/internal/handler/ui/tasks"
 	"ToDoWithKolya/internal/handler/ui/users"
 	"ToDoWithKolya/internal/service"
+	"ToDoWithKolya/internal/templates/errs"
 	"html/template"
-	"log"
 	"net/http"
 )
 
@@ -40,13 +40,13 @@ func (h Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 
 	tasks, err := h.srv.TaskSrv.GetTasksByUserID(user.ID)
 	if err != nil {
-		log.Fatalf("err: %s", err)
+		errs.ErrorWrap(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	err = h.Home.Execute(w, tasks)
 	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, "Internal Server Error", 500)
+		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		return
 	}
 }
