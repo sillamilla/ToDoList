@@ -12,6 +12,7 @@ type Service interface {
 	Login(req models.LoginRequest) (string, error)
 	Logout(session string) error
 
+	UserCheckExist(userName string) bool
 	GetUserBySession(session string) (models.User, error)
 
 	GetSessionLastActive(session string) (time.Time, error)
@@ -81,6 +82,12 @@ func (s userService) GetUserBySession(session string) (models.User, error) {
 	}
 
 	return bySession, nil
+}
+
+func (s userService) UserCheckExist(userName string) bool {
+	ok := s.rp.GetUsernames(userName)
+
+	return ok
 }
 
 func (s userService) GetSessionLastActive(session string) (time.Time, error) {

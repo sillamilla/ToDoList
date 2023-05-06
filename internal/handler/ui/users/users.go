@@ -1,16 +1,16 @@
 package users
 
 import (
+	"ToDoWithKolya/internal/handler/ui/errs"
 	"ToDoWithKolya/internal/models"
 	"ToDoWithKolya/internal/service/users"
-	"ToDoWithKolya/internal/templates/errs"
 	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 )
 
 type Handler struct {
-	ers    errs.Errors
 	srv    users.Service
 	signUp *template.Template
 	signIn *template.Template
@@ -33,13 +33,8 @@ func NewHandler(service users.Service) Handler {
 }
 
 func (h Handler) SignUp(w http.ResponseWriter, r *http.Request) {
-	//session, _ := r.Cookie("session")
-	//if session != nil {
-	//	errs.ErrorWrap(w, fmt.Errorf("u already logined"), http.StatusForbidden)
-	//	return
-	//}
-
-	err := h.signUp.Execute(w, nil)
+	validationErr := r.URL.Query().Get("status")
+	err := h.signUp.Execute(w, validationErr)
 	if err != nil {
 		errs.ErrorWrap(w, err, http.StatusInternalServerError)
 		return
@@ -56,7 +51,15 @@ func (h Handler) SignUpPost(w http.ResponseWriter, r *http.Request) {
 		Email:    email,
 	}
 
-	if ok := errs.Validate(w, user); !ok {
+	if validatorErr := errs.Validate(user); validatorErr != "" {
+		link := fmt.Sprintf("/sign-up?status=%s", validatorErr)
+		http.Redirect(w, r, link, http.StatusSeeOther)
+		return
+	}
+
+	ok := h.srv.UserCheckExist(user.Login)
+	if !ok {
+		http.Redirect(w, r, "/sign-up?status=this user already exist", http.StatusSeeOther)
 		return
 	}
 
@@ -76,12 +79,6 @@ func (h Handler) SignUpPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) SignIn(w http.ResponseWriter, r *http.Request) {
-	//session, _ := r.Cookie("session")
-	//if session != nil {
-	//	errs.ErrorWrap(w, fmt.Errorf("u already logined"), http.StatusForbidden)
-	//	return
-	//}
-
 	ok := r.URL.Query().Get("status")
 	err := h.signIn.Execute(w, ok)
 	if err != nil {
@@ -98,14 +95,16 @@ func (h Handler) SignInPost(w http.ResponseWriter, r *http.Request) {
 		Password: password,
 	}
 
-	if ok := errs.Validate(w, req); !ok {
+	if validatorErr := errs.Validate(req); validatorErr != "" {
+		link := fmt.Sprintf("/sign-in?status=%s", validatorErr)
+		http.Redirect(w, r, link, http.StatusSeeOther)
 		return
 	}
 
 	session, err := h.srv.Login(req)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
-			http.Redirect(w, r, "/sign-in?status=false", http.StatusSeeOther)
+			http.Redirect(w, r, "/sign-in?status=wrong login or password", http.StatusSeeOther)
 			return
 		}
 		errs.ErrorWrap(w, err, http.StatusInternalServerError)

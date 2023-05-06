@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.16/tailwind.min.css">
 </head>
 <body class="bg-gray-800 text-gray-200 font-sans">
+
 <div class="max-w-lg mx-auto py-12">
     <h1 class="text-3xl font-bold mb-4">Sign In</h1>
     <form class="w-full max-w-md" action="/sign-in" method="POST">
@@ -20,10 +21,13 @@
             <input id="password" type="password" name="password" class="form-input bg-gray-700 rounded-md border-gray-600 w-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
         </div>
         <div class="flex items-center justify-between">
-            <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-200 focus:outline-none">Sign In</button>
-            {{if eq . "false" }}
-                <p class="text-red-500 text-sm font-medium ml-1 inline-flex">Wrong username or password</p>
+            <button type="submit" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition duration-200 focus:outline-none">Sign In</button>
+
+
+            {{if ne . "" }}
+                <p class="text-red-500 text-sm font-medium ml-1 inline-flex">{{.}}</p>
             {{end}}
+            <a href="/sign-up" class="text-gray-500 font-medium hover:text-white">Sign Up</a>
         </div>
     </form>
 </div>

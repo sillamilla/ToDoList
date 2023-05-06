@@ -22,17 +22,16 @@ type LoginResponse struct {
 }
 
 func (u User) Validate() []string {
-	pattern := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
-	re := regexp.MustCompile(pattern)
 	errs := make([]string, 0, 2)
 
-	switch {
-	case !re.MatchString(u.Email):
-		errs = append(errs, "wrong email")
-	case utf8.RuneCountInString(u.Email) > 27 || utf8.RuneCountInString(u.Email) < 7:
-		errs = append(errs, "wrong email len")
+	pattern := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+	email := regexp.MustCompile(pattern)
 
-	case utf8.RuneCountInString(u.Login) > 15 || utf8.RuneCountInString(u.Login) < 4:
+	switch {
+	case u.Email != "" && !email.MatchString(u.Email):
+		errs = append(errs, "wrong email")
+
+	case utf8.RuneCountInString(u.Login) > 10 || utf8.RuneCountInString(u.Login) < 4:
 		errs = append(errs, "wrong login len")
 
 	case utf8.RuneCountInString(u.Password) > 55 || utf8.RuneCountInString(u.Password) < 4:
@@ -47,7 +46,7 @@ func (r LoginRequest) Validate() []string {
 	errs := make([]string, 0, 2)
 
 	switch {
-	case utf8.RuneCountInString(r.Login) > 15 || utf8.RuneCountInString(r.Login) < 4:
+	case utf8.RuneCountInString(r.Login) > 10 || utf8.RuneCountInString(r.Login) < 4:
 		errs = append(errs, "wrong login len")
 	case utf8.RuneCountInString(r.Password) > 55 || utf8.RuneCountInString(r.Password) < 4:
 		errs = append(errs, "wrong password len")

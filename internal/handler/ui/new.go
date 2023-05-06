@@ -2,10 +2,10 @@ package ui
 
 import (
 	"ToDoWithKolya/internal/ctxpkg"
+	"ToDoWithKolya/internal/handler/ui/errs"
 	"ToDoWithKolya/internal/handler/ui/tasks"
 	"ToDoWithKolya/internal/handler/ui/users"
 	"ToDoWithKolya/internal/service"
-	"ToDoWithKolya/internal/templates/errs"
 	"html/template"
 	"net/http"
 )

@@ -54,8 +54,6 @@ func (h Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//todo validate, wrong email or password(sql: no rows in result set)
-
 	session, err := h.srv.Login(newUser)
 	if err != nil {
 		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("login, err: %w", err))

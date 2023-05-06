@@ -1,7 +1,7 @@
 package users
 
 import (
-	"ToDoWithKolya/internal/templates/errs"
+	"ToDoWithKolya/internal/handler/ui/errs"
 	"context"
 	"fmt"
 	"net/http"
