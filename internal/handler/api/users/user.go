@@ -1,12 +1,10 @@
 package users
 
 import (
-	"ToDoWithKolya/internal/handler/api/helper"
+	"ToDoWithKolya/internal/handler/helper"
 	"ToDoWithKolya/internal/models"
 	"ToDoWithKolya/internal/service/users"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 )
 
@@ -39,30 +37,25 @@ func (h Handler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) Login(w http.ResponseWriter, r *http.Request) {
-	readAll, err := io.ReadAll(r.Body)
+	var newUser models.LoginRequest
+	validationErrs, err := helper.UnmarshalAndValidate(r.Body, &newUser)
 	if err != nil {
 		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("need to be registrated, err: %w", err))
 		return
 	}
-	defer r.Body.Close()
-
-	//todo setting models.Unmarshal and validate under todo
-
-	var newUser models.LoginRequest
-	if err = json.Unmarshal(readAll, &newUser); err != nil {
-		helper.SendError(w, http.StatusBadRequest, err)
+	if validationErrs != nil {
+		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("validation, err: %s", validationErrs))
 		return
 	}
-
 	session, err := h.srv.Login(newUser)
 	if err != nil {
 		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("login, err: %w", err))
 		return
 	}
 
-	helper.SendJson(w, models.LoginResponse{Session: session}, http.StatusOK)
+	err = helper.SendJson(w, models.LoginResponse{Session: session}, http.StatusOK)
 	if err != nil {
-		helper.SendError(w, http.StatusBadRequest, fmt.Errorf("send json, err: %w", err))
+		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("send json, err: %w", err))
 		return
 	}
 

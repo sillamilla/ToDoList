@@ -2,13 +2,15 @@ package tasks
 
 import (
 	"ToDoWithKolya/internal/ctxpkg"
-	"ToDoWithKolya/internal/handler/api/helper"
+	"ToDoWithKolya/internal/handler/helper"
 	"ToDoWithKolya/internal/handler/ui/errs"
 	"ToDoWithKolya/internal/models"
 	"ToDoWithKolya/internal/service/task"
 	"fmt"
+	"github.com/gorilla/mux"
 	"html/template"
 	"net/http"
+	"strconv"
 )
 
 type Handler struct {
@@ -44,7 +46,7 @@ func (h Handler) Create(w http.ResponseWriter, r *http.Request) {
 	validationErr := r.URL.Query().Get("status")
 	err := h.create.Execute(w, validationErr)
 	if err != nil {
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 }
@@ -52,7 +54,7 @@ func (h Handler) Create(w http.ResponseWriter, r *http.Request) {
 func (h Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	user, ok := ctxpkg.UserFromContext(r.Context())
 	if !ok {
-		errs.ErrorWrap(w, fmt.Errorf("user from ctx"), http.StatusInternalServerError)
+		errs.HandleError(w, fmt.Errorf("user from ctx"), http.StatusInternalServerError)
 		return
 	}
 
@@ -72,7 +74,57 @@ func (h Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
 
 	err := h.srv.Create(newTask)
 	if err != nil {
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (h Handler) Search(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	searchValue := vars["search"]
+
+	tasks, err := h.srv.SearchTask(searchValue)
+	if err != nil {
+		errs.HandleError(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	user, ok := ctxpkg.UserFromContext(r.Context())
+	if !ok {
+		http.Redirect(w, r, "/sign-in", http.StatusSeeOther)
+		return
+	}
+
+	userAndTask := models.UserAndTask{
+		User:  user,
+		Tasks: tasks,
+	}
+
+	err = h.home.Execute(w, userAndTask)
+	if err != nil {
+		errs.HandleError(w, err, http.StatusInternalServerError)
+		return
+	}
+}
+
+func (h Handler) MarkAsDone(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	taskID, err := strconv.Atoi(vars["taskID"])
+	if err != nil {
+		errs.HandleError(w, err, http.StatusInternalServerError)
+		return
+	}
+	status, err := strconv.Atoi(vars["status"])
+	if err != nil {
+		errs.HandleError(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	err = h.srv.MarkValueSet(taskID, status)
+	if err != nil {
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -82,19 +134,19 @@ func (h Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
 func (h Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := helper.GetIntFromURL(r, "id")
 	if err != nil {
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	user, ok := ctxpkg.UserFromContext(r.Context())
 	if !ok {
-		errs.ErrorWrap(w, fmt.Errorf("user from context"), http.StatusInternalServerError)
+		errs.HandleError(w, fmt.Errorf("user from context"), http.StatusInternalServerError)
 		return
 	}
 
 	err = h.srv.DeleteByTaskID(id, user.ID)
 	if err != nil {
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -104,18 +156,18 @@ func (h Handler) Delete(w http.ResponseWriter, r *http.Request) {
 func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
 	id, err := helper.GetIntFromURL(r, "id")
 	if err != nil {
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 	myTask, err := h.srv.GetByID(id)
 	if err != nil {
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	err = h.edit.Execute(w, myTask)
 	if err != nil {
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 }
@@ -123,13 +175,13 @@ func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
 func (h Handler) EditPost(w http.ResponseWriter, r *http.Request) {
 	id, err := helper.GetIntFromURL(r, "id")
 	if err != nil {
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	user, ok := ctxpkg.UserFromContext(r.Context())
 	if !ok {
-		errs.ErrorWrap(w, fmt.Errorf("user from context"), http.StatusInternalServerError)
+		errs.HandleError(w, fmt.Errorf("user from context"), http.StatusInternalServerError)
 		return
 	}
 
@@ -149,7 +201,7 @@ func (h Handler) EditPost(w http.ResponseWriter, r *http.Request) {
 
 	err = h.srv.Edit(newTask, user.ID)
 	if err != nil {
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 

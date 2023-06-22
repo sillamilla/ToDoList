@@ -1,7 +1,7 @@
 package task
 
 import (
-	"ToDoWithKolya/internal/models"
+	models "ToDoWithKolya/internal/models"
 	"database/sql"
 )
 
@@ -12,6 +12,10 @@ type TaskRepo interface {
 	GetTasksByUserID(userID int) ([]models.Task, error)
 	GetByUserID(id int) (models.Task, error)
 	GetByID(id int) (models.Task, error)
+
+	MarkValueSet(taskID int, status int) error
+
+	SearchTask(taskName string) ([]models.Task, error)
 
 	DeleteByTaskID(id int, userID int) error
 }
@@ -26,10 +30,11 @@ func Repo(db *sql.DB) TaskRepo {
 
 func (r taskRepo) Create(task models.Task) error {
 	_, err := r.db.Exec(
-		"insert into tasks(user_id, title, description) values (?, ?, ?)",
+		"insert into tasks(user_id, title, description, isDone) values (?, ?, ?, ?)",
 		task.UserID,
 		task.Title,
 		task.Description,
+		task.IsDone,
 	)
 	return models.DBErr(err)
 }
@@ -47,7 +52,7 @@ func (r taskRepo) GetByUserID(id int) (models.Task, error) {
 }
 
 func (r taskRepo) DeleteByTaskID(id int, userID int) error {
-	_, err := r.db.Exec("delete from tasks where id = ? and user_id = ?", id, userID)
+	_, err := r.db.Exec("delete from tasks where isDone = ? and user_id = ?", id, userID)
 	return models.DBErr(err)
 }
 
@@ -71,7 +76,7 @@ func (r taskRepo) GetTasksByUserID(userID int) ([]models.Task, error) {
 	var tasks []models.Task
 	for rows.Next() {
 		var task models.Task
-		err = rows.Scan(&task.ID, &task.UserID, &task.Title, &task.Description, &task.CreatedDate)
+		err = rows.Scan(&task.ID, &task.UserID, &task.Title, &task.Description, &task.IsDone, &task.CreatedDate)
 		if err != nil {
 			return nil, models.DBErr(err)
 		}
@@ -90,6 +95,31 @@ func (r taskRepo) GetByID(id int) (models.Task, error) {
 
 	var task models.Task
 
-	err := row.Scan(&task.ID, &task.UserID, &task.Title, &task.Description, &task.CreatedDate)
+	err := row.Scan(&task.ID, &task.UserID, &task.Title, &task.Description, &task.IsDone, &task.CreatedDate)
 	return task, models.DBErr(err)
+}
+
+func (r taskRepo) MarkValueSet(taskID int, status int) error {
+	_, err := r.db.Exec("update tasks set isDone = ? where id = ?", status, taskID)
+	return models.DBErr(err)
+}
+
+func (r taskRepo) SearchTask(taskName string) ([]models.Task, error) {
+	rows, err := r.db.Query("select * from tasks t where t.title = ?", taskName)
+	if err != nil {
+		return nil, models.DBErr(err)
+	}
+
+	var tasks []models.Task
+	for rows.Next() {
+		var task models.Task
+		err = rows.Scan(&task.ID, &task.UserID, &task.Title, &task.Description, &task.IsDone, &task.CreatedDate)
+		if err != nil {
+			return nil, models.DBErr(err)
+		}
+
+		tasks = append(tasks, task)
+	}
+
+	return tasks, models.DBErr(err)
 }

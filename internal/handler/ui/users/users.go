@@ -36,7 +36,7 @@ func (h Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	validationErr := r.URL.Query().Get("status")
 	err := h.signUp.Execute(w, validationErr)
 	if err != nil {
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 }
@@ -65,7 +65,7 @@ func (h Handler) SignUpPost(w http.ResponseWriter, r *http.Request) {
 
 	session, err := h.srv.Register(user)
 	if err != nil {
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -82,7 +82,7 @@ func (h Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 	ok := r.URL.Query().Get("status")
 	err := h.signIn.Execute(w, ok)
 	if err != nil {
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 }
@@ -107,7 +107,7 @@ func (h Handler) SignInPost(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/sign-in?status=wrong login or password", http.StatusSeeOther)
 			return
 		}
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -123,7 +123,7 @@ func (h Handler) SignInPost(w http.ResponseWriter, r *http.Request) {
 func (h Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	session, err := r.Cookie("session")
 	if err != nil {
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 

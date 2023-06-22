@@ -1,14 +1,14 @@
 package errs
 
 import (
-	"ToDoWithKolya/internal/handler/api/helper"
+	"ToDoWithKolya/internal/handler/helper"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 )
 
-type Stuff struct {
+type Errors struct {
 	Status   int
 	Err      string
 	Redirect string
@@ -20,31 +20,21 @@ const (
 	home   = "/"
 )
 
-func ErrorWrap(w http.ResponseWriter, validErr error, status int) {
+func HandleError(w http.ResponseWriter, newErr error, status int) {
 	errorPage, tmplErr := template.ParseFiles("./internal/templates/errs/errors.html")
 	if tmplErr != nil {
 		panic(tmplErr)
 	}
 
-	valErr := fmt.Sprintf("%s", validErr)
-
 	var redirect string
-	switch valErr {
-	case "wrong login len":
-		redirect = signUp
-	case "wrong password len":
-		redirect = signUp
-	case "wrong email":
-		redirect = signUp
-	case "user with this username already exist":
-		redirect = signUp
+	switch newErr.Error() {
 	default:
 		redirect = home
 	}
 
-	stuff := Stuff{
+	stuff := Errors{
 		Status:   status,
-		Err:      valErr,
+		Err:      newErr.Error(),
 		Redirect: redirect,
 	}
 

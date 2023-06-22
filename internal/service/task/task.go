@@ -14,6 +14,11 @@ type Service interface {
 	GetByID(id int) (models.Task, error)
 
 	Edit(task models.Task, userID int) error
+
+	SearchTask(taskName string) ([]models.Task, error)
+
+	MarkValueSet(taskID int, status int) error
+
 	DeleteByTaskID(id int, userID int) error
 }
 
@@ -45,6 +50,22 @@ func (s taskService) Edit(task models.Task, userID int) error {
 	err := s.rp.Update(task, userID)
 	if err != nil {
 		return fmt.Errorf("update err: %w", err)
+	}
+	return nil
+}
+
+func (s taskService) SearchTask(taskName string) ([]models.Task, error) {
+	tasks, err := s.rp.SearchTask(taskName)
+	if err != nil {
+		return tasks, fmt.Errorf("search task: %w", err)
+	}
+	return tasks, nil
+}
+
+func (s taskService) MarkValueSet(taskID int, status int) error {
+	err := s.rp.MarkValueSet(taskID, status)
+	if err != nil {
+		return fmt.Errorf("mark value set: %w", err)
 	}
 	return nil
 }

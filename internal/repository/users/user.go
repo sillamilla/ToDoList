@@ -42,10 +42,10 @@ func (r userRepo) GetByLogin(login, password string) (models.User, error) {
 	var user models.User
 	err := row.Scan(&user.ID, &user.Login, &user.Password, &user.Email)
 	if models.DBErr(err) != nil {
-		return models.User{}, models.DBErr(err)
+		return models.User{}, err
 	}
 
-	return user, models.DBErr(err)
+	return user, nil
 }
 
 func (r userRepo) GetUsernames(userName string) bool {

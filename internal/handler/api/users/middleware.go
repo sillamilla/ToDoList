@@ -1,7 +1,7 @@
 package users
 
 import (
-	"ToDoWithKolya/internal/handler/api/helper"
+	"ToDoWithKolya/internal/handler/helper"
 	"context"
 	"fmt"
 	"net/http"

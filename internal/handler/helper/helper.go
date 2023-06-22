@@ -46,6 +46,7 @@ func SendJson(w http.ResponseWriter, data interface{}, status int) error {
 	marshal, err := json.Marshal(data)
 	if err != nil {
 		return err
+		//todo send error here and delelete return
 	}
 
 	w.Write(marshal)

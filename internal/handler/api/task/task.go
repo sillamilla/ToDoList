@@ -2,7 +2,7 @@ package task
 
 import (
 	"ToDoWithKolya/internal/ctxpkg"
-	"ToDoWithKolya/internal/handler/api/helper"
+	"ToDoWithKolya/internal/handler/helper"
 	"ToDoWithKolya/internal/models"
 	"ToDoWithKolya/internal/service/task"
 	"database/sql"

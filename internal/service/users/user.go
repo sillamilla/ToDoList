@@ -63,7 +63,7 @@ func (s userService) Login(req models.LoginRequest) (string, error) {
 		return "", fmt.Errorf("upsert session error, err: %w", err)
 	}
 
-	return session, err
+	return session, nil
 }
 
 func (s userService) Logout(session string) error {

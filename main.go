@@ -58,7 +58,12 @@ func main() {
 		r.HandleFunc("/edit/{id}", auth(uiHnd.TaskHandler.EditPost)).Methods(http.MethodPost)
 		r.HandleFunc("/edit/{id}", auth(uiHnd.TaskHandler.Edit)).Methods(http.MethodGet)
 
+		r.HandleFunc("/mark/{taskID}/{status}", auth(uiHnd.TaskHandler.MarkAsDone)).Methods(http.MethodGet)
+
+		r.HandleFunc("/search/{search}", auth(uiHnd.TaskHandler.Search)).Methods(http.MethodGet)
+
 		r.HandleFunc("/task/delete/{id}", auth(uiHnd.TaskHandler.Delete)).Methods(http.MethodGet)
+		r.HandleFunc("/task/deleteAll/{id}", auth(uiHnd.TaskHandler.Delete)).Methods(http.MethodGet)
 
 	}
 

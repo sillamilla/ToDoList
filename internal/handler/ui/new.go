@@ -5,9 +5,11 @@ import (
 	"ToDoWithKolya/internal/handler/ui/errs"
 	"ToDoWithKolya/internal/handler/ui/tasks"
 	"ToDoWithKolya/internal/handler/ui/users"
+	"ToDoWithKolya/internal/models"
 	"ToDoWithKolya/internal/service"
 	"html/template"
 	"net/http"
+	"sort"
 )
 
 type Handler struct {
@@ -34,19 +36,31 @@ func New(srv *service.Service) Handler {
 func (h Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 	user, ok := ctxpkg.UserFromContext(r.Context())
 	if !ok {
-		http.Redirect(w, r, "/sign-in", http.StatusPermanentRedirect)
+		http.Redirect(w, r, "/sign-in", http.StatusSeeOther)
 		return
 	}
 
 	tasks, err := h.srv.TaskSrv.GetTasksByUserID(user.ID)
 	if err != nil {
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	err = h.Home.Execute(w, tasks)
+	sort.Slice(tasks, func(i, j int) bool {
+		if tasks[i].CreatedDate.After(tasks[j].CreatedDate) {
+			return true
+		}
+		return false
+	})
+
+	userAndTask := models.UserAndTask{
+		User:  user,
+		Tasks: tasks,
+	}
+
+	err = h.Home.Execute(w, userAndTask)
 	if err != nil {
-		errs.ErrorWrap(w, err, http.StatusInternalServerError)
+		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 }

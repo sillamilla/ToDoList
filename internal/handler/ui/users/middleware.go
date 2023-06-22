@@ -16,24 +16,16 @@ func (h Handler) Authorization(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		user, err := h.srv.GetUserBySession(session.Value)
-		if err != nil {
-			errs.ErrorWrap(w, fmt.Errorf("user by session, err: %w", err), http.StatusInternalServerError)
-			return
-		}
-
-		lastActive, err := h.srv.GetSessionLastActive(session.Value)
-		if err != nil {
-			errs.ErrorWrap(w, fmt.Errorf("last activie, err: %w", err), http.StatusInternalServerError)
-			return
-		}
+		lastActive, _ := h.srv.GetSessionLastActive(session.Value)
 
 		sessionExpireTime := lastActive.Add(30 * time.Minute)
 		if sessionExpireTime.Before(time.Now()) {
-			err = h.srv.Logout(session.Value)
-			if err != nil {
-				errs.ErrorWrap(w, fmt.Errorf("logout, err: %w", err), http.StatusInternalServerError)
-			}
+			h.Logout(w, r)
+		}
+
+		user, err := h.srv.GetUserBySession(session.Value)
+		if err != nil {
+			errs.HandleError(w, fmt.Errorf("user by session, err: %w", err), http.StatusInternalServerError)
 			return
 		}
 
