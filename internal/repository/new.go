@@ -3,7 +3,7 @@ package repository
 import (
 	"ToDoWithKolya/internal/repository/task"
 	"ToDoWithKolya/internal/repository/users"
-	"database/sql"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type Repo struct {
@@ -11,9 +11,9 @@ type Repo struct {
 	UserRepo users.UserRepo
 }
 
-func New(db *sql.DB) *Repo {
+func New(db mongo.Database) *Repo {
 	return &Repo{
-		TaskRepo: task.Repo(db),
-		UserRepo: users.Repo(db),
+		TaskRepo: task.NewTaskRepo(db),
+		UserRepo: users.NewUserRepo(db),
 	}
 }

@@ -36,6 +36,7 @@ func (h Handler) Create(w http.ResponseWriter, r *http.Request) {
 		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("user from ctx, err %v", ok))
 		return
 	}
+
 	newtask.UserID = user.ID
 
 	err = h.srv.Create(newtask)
@@ -67,11 +68,7 @@ func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	taskID, err := helper.GetIntFromURL(r, "id")
-	if err != nil {
-		helper.SendError(w, http.StatusBadRequest, fmt.Errorf("value from url, err %w", err))
-		return
-	}
+	taskID := helper.FromURL(r, "id")
 	updatedTask.ID = taskID
 
 	err = h.srv.Edit(updatedTask, user.ID)
@@ -84,11 +81,7 @@ func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
-	id, err := helper.GetIntFromURL(r, "id")
-	if err != nil {
-		helper.SendError(w, http.StatusBadRequest, fmt.Errorf("value from url, err %w", err))
-		return
-	}
+	id := helper.FromURL(r, "id")
 
 	user, ok := ctxpkg.UserFromContext(r.Context())
 	if !ok {
@@ -118,11 +111,7 @@ func (h Handler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) DeleteByTaskID(w http.ResponseWriter, r *http.Request) {
-	id, err := helper.GetIntFromURL(r, "id")
-	if err != nil {
-		helper.SendError(w, http.StatusBadRequest, fmt.Errorf("value from url, err: %w", err))
-		return
-	}
+	id := helper.FromURL(r, "id")
 
 	user, ok := ctxpkg.UserFromContext(r.Context())
 	if !ok {
@@ -130,7 +119,7 @@ func (h Handler) DeleteByTaskID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.srv.DeleteByTaskID(id, user.ID)
+	err := h.srv.DeleteByTaskID(id, user.ID)
 	if err != nil {
 		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("delete task by id, err: %w", err))
 		return

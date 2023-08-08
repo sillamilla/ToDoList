@@ -58,7 +58,7 @@ func (h Handler) SignUpPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ok := h.srv.UserCheckExist(user.Login)
-	if !ok {
+	if ok {
 		http.Redirect(w, r, "/sign-up?status=this user already exist", http.StatusSeeOther)
 		return
 	}

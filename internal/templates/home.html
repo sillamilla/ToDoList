@@ -136,7 +136,7 @@
                                                 </label>
                                             </div>
                                             <div class="flex items-center justify-end mt-5 ml-4">
-                                                <label for="is_complete_{{.ID}}" class="flex items-center cursor-pointer">
+                                                <label class="flex items-center cursor-pointer">
                                                     <input type="checkbox" class="h-4 w-4 rounded-full bg-gray-200 appearance-none transition duration-200 focus:outline-none checked:bg-green-500 hover:bg-green-500 transform scale-90 hover:scale-110" name="is_complete" {{if .IsDone}}checked{{end}} onchange="checkedStatus(this, '{{.ID}}')">
                                                 </label>
                                             </div>

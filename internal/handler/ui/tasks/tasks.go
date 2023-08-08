@@ -58,12 +58,10 @@ func (h Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	title := r.FormValue("title")
-	description := r.FormValue("description")
 	newTask := models.Task{
-		UserID:      user.ID,
-		Title:       title,
-		Description: description,
+		ID:          user.ID,
+		Title:       r.FormValue("title"),
+		Description: r.FormValue("description"),
 	}
 
 	if validatorErr := errs.Validate(newTask); validatorErr != "" {
@@ -111,11 +109,8 @@ func (h Handler) Search(w http.ResponseWriter, r *http.Request) {
 
 func (h Handler) MarkAsDone(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	taskID, err := strconv.Atoi(vars["taskID"])
-	if err != nil {
-		errs.HandleError(w, err, http.StatusInternalServerError)
-		return
-	}
+	taskID := helper.FromURL(r, "taskID")
+
 	status, err := strconv.Atoi(vars["status"])
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
@@ -132,11 +127,7 @@ func (h Handler) MarkAsDone(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	id, err := helper.GetIntFromURL(r, "id")
-	if err != nil {
-		errs.HandleError(w, err, http.StatusInternalServerError)
-		return
-	}
+	id := helper.FromURL(r, "id")
 
 	user, ok := ctxpkg.UserFromContext(r.Context())
 	if !ok {
@@ -144,7 +135,7 @@ func (h Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.srv.DeleteByTaskID(id, user.ID)
+	err := h.srv.DeleteByTaskID(id, user.ID)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
@@ -154,11 +145,8 @@ func (h Handler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
-	id, err := helper.GetIntFromURL(r, "id")
-	if err != nil {
-		errs.HandleError(w, err, http.StatusInternalServerError)
-		return
-	}
+	id := helper.FromURL(r, "id")
+
 	myTask, err := h.srv.GetByID(id)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
@@ -173,11 +161,7 @@ func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) EditPost(w http.ResponseWriter, r *http.Request) {
-	id, err := helper.GetIntFromURL(r, "id")
-	if err != nil {
-		errs.HandleError(w, err, http.StatusInternalServerError)
-		return
-	}
+	id := helper.FromURL(r, "id")
 
 	user, ok := ctxpkg.UserFromContext(r.Context())
 	if !ok {
@@ -199,7 +183,7 @@ func (h Handler) EditPost(w http.ResponseWriter, r *http.Request) {
 	//	return
 	//}
 
-	err = h.srv.Edit(newTask, user.ID)
+	err := h.srv.Edit(newTask, user.ID)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return

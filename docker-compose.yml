@@ -1,0 +1,9 @@
+version: '3'
+services:
+  todo_mongo:
+    image: mongo
+    container_name: todo_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./internal/config/mongo.conf:/etc/mongo.conf

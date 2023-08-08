@@ -2,49 +2,83 @@ package users
 
 import (
 	"ToDoWithKolya/internal/models"
+	"context"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"time"
 )
 
-func (r userRepo) CreateSession(userID int, session string) error {
-	_, err := r.db.Exec("insert into sessions(user_id, session) values (?, ?)", userID, session)
-	return models.DBErr(err)
+func (r userRepo) CreateSession(userID string, session string) error {
+	sessionDoc := bson.M{"user_id": userID, "session": session}
+	_, err := r.db.InsertOne(context.TODO(), sessionDoc)
+	return err
 }
 
-func (r userRepo) UpsertSession(userID int, session string) error {
-	_, err := r.db.Exec("INSERT INTO sessions (user_id, session) VALUES (?, ?) ON CONFLICT (user_id) DO UPDATE SET session = ?", userID, session, session)
-	return models.DBErr(err)
+func (r userRepo) UpsertSession(userID string, session string) error {
+	filter := bson.M{"user_id": userID}
+	update := bson.M{"$set": bson.M{"session": session}}
+	opts := options.Update().SetUpsert(true)
+	_, err := r.db.UpdateOne(context.TODO(), filter, update, opts)
+	return err
 }
 
 func (r userRepo) GetUserBySession(session string) (models.User, error) {
-	row := r.db.QueryRow("select u.id, u.login, u.password, u.email from sessions join users u on sessions.user_id = u.id where session = ?", session)
-	if models.DBErr(row.Err()) != nil {
-		return models.User{}, models.DBErr(row.Err())
-	}
-
 	var user models.User
-	err := row.Scan(&user.ID, &user.Login, &user.Password, &user.Email)
+	lookupStage := bson.D{{"$lookup", bson.D{
+		{"from", "users"},
+		{"localField", "user_id"},
+		{"foreignField", "id"},
+		{"as", "user"},
+	}}}
+	matchStage := bson.D{{"$match", bson.D{{"session", session}}}}
+	unwindStage := bson.D{{"$unwind", "$user"}}
+	projectStage := bson.D{{"$project", bson.D{
+		{"_id", 0},
+		{"user.id", 1},
+		{"user.login", 1},
+		{"user.password", 1},
+		{"user.email", 1},
+	}}}
+
+	cursor, err := r.db.Aggregate(context.TODO(), mongo.Pipeline{
+		lookupStage, matchStage, unwindStage, projectStage,
+	})
 	if err != nil {
-		return models.User{}, models.DBErr(err)
+		return models.User{}, err
+	}
+	defer cursor.Close(context.TODO())
+
+	if cursor.Next(context.TODO()) {
+		if err := cursor.Decode(&user); err != nil {
+			return models.User{}, err
+		}
+		return user, nil
 	}
 
-	return user, nil
+	return models.User{}, mongo.ErrNoDocuments
 }
 
 func (r userRepo) DeleteSession(session string) error {
-	_, err := r.db.Exec("delete from sessions where session = ?", session)
-	return models.DBErr(err)
+	_, err := r.db.DeleteMany(context.TODO(), bson.M{"session": session})
+	return err
 }
 
 func (r userRepo) GetSessionLastActive(session string) (time.Time, error) {
-	row := r.db.QueryRow("select created_at from sessions where session = ?", session)
-	if models.DBErr(row.Err()) != nil {
-		return time.Time{}, models.DBErr(row.Err())
+	var sessionTime time.Time
+	projection := options.FindOne().SetProjection(bson.M{"created_at": 1})
+	filter := bson.M{"session": session}
+
+	result := r.db.FindOne(context.TODO(), filter, projection)
+	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			return time.Time{}, models.DBErr(models.ErrNotFound)
+		}
+		return time.Time{}, result.Err()
 	}
 
-	var sessionTime time.Time
-	err := row.Scan(&sessionTime)
-	if err != nil {
-		return time.Time{}, models.DBErr(err)
+	if err := result.Decode(&sessionTime); err != nil {
+		return time.Time{}, err
 	}
 
 	return sessionTime, nil

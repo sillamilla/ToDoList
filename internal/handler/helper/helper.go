@@ -9,7 +9,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strconv"
 )
 
 func SendError(w http.ResponseWriter, status int, err error) {
@@ -30,16 +29,10 @@ func SendError(w http.ResponseWriter, status int, err error) {
 	}
 }
 
-func GetIntFromURL(r *http.Request, key string) (int, error) {
-	vars := mux.Vars(r)
-	valueStr := vars[key]
+func FromURL(r *http.Request, key string) string {
+	value := mux.Vars(r)[key]
 
-	value, err := strconv.Atoi(valueStr)
-	if err != nil {
-		return 0, err
-	}
-
-	return value, err
+	return value
 }
 
 func SendJson(w http.ResponseWriter, data interface{}, status int) error {

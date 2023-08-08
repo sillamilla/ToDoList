@@ -2,7 +2,9 @@ package users
 
 import (
 	"ToDoWithKolya/internal/models"
-	"database/sql"
+	"context"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"time"
 )
 
@@ -13,56 +15,45 @@ type UserRepo interface {
 	GetUserBySession(session string) (models.User, error)
 	GetUsernames(userName string) bool
 
-	CreateSession(userID int, session string) error
-	UpsertSession(userID int, session string) error
+	CreateSession(userID string, session string) error
+	UpsertSession(userID string, session string) error
 	GetSessionLastActive(session string) (time.Time, error)
 	DeleteSession(session string) error
 }
 
 type userRepo struct {
-	db *sql.DB
+	db *mongo.Collection
 }
 
-func Repo(db *sql.DB) UserRepo {
-	return userRepo{db: db}
+func NewUserRepo(database mongo.Database) userRepo {
+	return userRepo{
+		db: database.Collection("users"),
+	}
 }
 
 func (r userRepo) Create(user models.User) error {
-	_, err := r.db.Exec("insert into users(login, password, email) values (?, ?, ?)", user.Login, user.Password, user.Email)
-
-	return models.DBErr(err)
+	userDoc := bson.M{"login": user.Login, "password": user.Password, "email": user.Email}
+	_, err := r.db.InsertOne(context.TODO(), userDoc)
+	return err
 }
 
 func (r userRepo) GetByLogin(login, password string) (models.User, error) {
-	row := r.db.QueryRow("select * from users where login = ? and password = ?", login, password)
-	if models.DBErr(row.Err()) != nil {
-		return models.User{}, models.DBErr(row.Err())
-	}
-
 	var user models.User
-	err := row.Scan(&user.ID, &user.Login, &user.Password, &user.Email)
-	if models.DBErr(err) != nil {
+	err := r.db.FindOne(context.TODO(), bson.M{"login": login, "password": password}).Decode(&user)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return models.User{}, models.DBErr(models.ErrNotFound)
+		}
 		return models.User{}, err
 	}
-
 	return user, nil
 }
 
 func (r userRepo) GetUsernames(userName string) bool {
-	row := r.db.QueryRow("select * from users where login = ?", userName)
-	if models.DBErr(row.Err()) != nil {
-		return false
-	}
-
-	var user models.User
-	err := row.Scan(&user.ID, &user.Login, &user.Password, &user.Email)
-	if models.DBErr(err) != nil {
+	filter := bson.M{"login": userName}
+	count, err := r.db.CountDocuments(context.TODO(), filter)
+	if err != nil {
 		return true
 	}
-
-	if user.Login == userName {
-		return false
-	}
-
-	return true
+	return count > 0
 }

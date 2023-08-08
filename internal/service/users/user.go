@@ -4,6 +4,7 @@ import (
 	"ToDoWithKolya/internal/models"
 	"ToDoWithKolya/internal/repository/users"
 	"fmt"
+	"github.com/google/uuid"
 	"time"
 )
 
@@ -27,15 +28,23 @@ func NewUserService(rp users.UserRepo) Service {
 }
 
 func (s userService) Register(user models.User) (string, error) {
-	old := user.Password
+	Password := user.Password
+	newUser := models.User{
+		ID:        uuid.New().String(),
+		Login:     user.Login,
+		Email:     user.Email,
+		CreatedAt: time.Now(),
+	}
+
 	user.Password = HashGenerate(user.Password)
 
-	if err := s.rp.Create(user); err != nil {
+	if err := s.rp.Create(newUser); err != nil {
 		return "", fmt.Errorf("register err: %w", err)
 	}
+
 	session, err := s.Login(models.LoginRequest{
 		Login:    user.Login,
-		Password: old,
+		Password: Password,
 	})
 	if err != nil {
 		return "", fmt.Errorf("registe:login: error, err: %w", err)

@@ -1,26 +1,42 @@
 package main
 
 import (
+	"ToDoWithKolya/internal/config"
 	"ToDoWithKolya/internal/handler/api"
 	"ToDoWithKolya/internal/handler/ui"
 	"ToDoWithKolya/internal/repository"
 	"ToDoWithKolya/internal/service"
-	"ToDoWithKolya/pkg/sql_lite"
+	"context"
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"net/http"
 )
 
 func main() {
-	database, err := sql_lite.New()
+	cfg := config.GetConfig()
+
+	dbMongo, err := mongo.Connect(context.Background(), options.Client().ApplyURI(cfg.Mongo.Address))
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer func(dbMongo *mongo.Client, ctx context.Context) {
+		err = dbMongo.Disconnect(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(dbMongo, context.Background())
+
+	err = dbMongo.Ping(context.Background(), nil)
+	if err != nil {
+		log.Fatal("Connect error Mongo:", err)
+	}
+
+	repo := repository.New(*dbMongo.Database(cfg.Mongo.DBName, nil))
+	srv := service.New(repo)
 
 	r := mux.NewRouter()
-
-	repo := repository.New(database)
-	srv := service.New(repo)
 
 	{
 		apiHnd := api.New(srv)
@@ -67,5 +83,7 @@ func main() {
 
 	}
 
-	http.ListenAndServe(":8080", r)
+	if err = http.ListenAndServe(":8080", r); err != nil {
+		log.Fatal(err)
+	}
 }

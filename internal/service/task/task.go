@@ -9,17 +9,17 @@ import (
 type Service interface {
 	Create(task models.Task) error
 
-	GetByUserID(id int) (models.Task, error)
-	GetTasksByUserID(userID int) ([]models.Task, error)
-	GetByID(id int) (models.Task, error)
+	GetByUserID(id string) (models.Task, error)
+	GetTasksByUserID(userID string) ([]models.Task, error)
+	GetByID(id string) (models.Task, error)
 
-	Edit(task models.Task, userID int) error
+	Edit(task models.Task, userID string) error
 
 	SearchTask(taskName string) ([]models.Task, error)
 
-	MarkValueSet(taskID int, status int) error
+	MarkValueSet(taskID string, status int) error
 
-	DeleteByTaskID(id int, userID int) error
+	DeleteByTaskID(id string, userID string) error
 }
 
 type taskService struct {
@@ -37,7 +37,7 @@ func (s taskService) Create(task models.Task) error {
 	return nil
 }
 
-func (s taskService) GetByUserID(id int) (models.Task, error) {
+func (s taskService) GetByUserID(id string) (models.Task, error) {
 	byID, err := s.rp.GetByUserID(id)
 	if err != nil {
 		return models.Task{}, fmt.Errorf("users by id err: %w", err)
@@ -46,7 +46,7 @@ func (s taskService) GetByUserID(id int) (models.Task, error) {
 	return byID, nil
 }
 
-func (s taskService) Edit(task models.Task, userID int) error {
+func (s taskService) Edit(task models.Task, userID string) error {
 	err := s.rp.Update(task, userID)
 	if err != nil {
 		return fmt.Errorf("update err: %w", err)
@@ -62,7 +62,7 @@ func (s taskService) SearchTask(taskName string) ([]models.Task, error) {
 	return tasks, nil
 }
 
-func (s taskService) MarkValueSet(taskID int, status int) error {
+func (s taskService) MarkValueSet(taskID string, status int) error {
 	err := s.rp.MarkValueSet(taskID, status)
 	if err != nil {
 		return fmt.Errorf("mark value set: %w", err)
@@ -70,7 +70,7 @@ func (s taskService) MarkValueSet(taskID int, status int) error {
 	return nil
 }
 
-func (s taskService) DeleteByTaskID(id int, userID int) error {
+func (s taskService) DeleteByTaskID(id string, userID string) error {
 	err := s.rp.DeleteByTaskID(id, userID)
 	if err != nil {
 		return fmt.Errorf("delete by task id err: %w", err)
@@ -78,7 +78,7 @@ func (s taskService) DeleteByTaskID(id int, userID int) error {
 	return nil
 }
 
-func (s taskService) GetTasksByUserID(userID int) ([]models.Task, error) {
+func (s taskService) GetTasksByUserID(userID string) ([]models.Task, error) {
 	tasks, err := s.rp.GetTasksByUserID(userID)
 	if err != nil {
 		return nil, fmt.Errorf("get task by users id err: %w", err)
@@ -86,7 +86,7 @@ func (s taskService) GetTasksByUserID(userID int) ([]models.Task, error) {
 	return tasks, err
 }
 
-func (s taskService) GetByID(id int) (models.Task, error) {
+func (s taskService) GetByID(id string) (models.Task, error) {
 	byID, err := s.rp.GetByID(id)
 	if err != nil {
 		return models.Task{}, fmt.Errorf("get by id err: %w", err)
