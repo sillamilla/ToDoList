@@ -26,7 +26,7 @@ func (u User) Validate() []string {
 	return errs
 }
 
-func (r LoginRequest) Validate() []string {
+func (r Input) Validate() []string {
 	errs := make([]string, 0, 2)
 
 	switch {

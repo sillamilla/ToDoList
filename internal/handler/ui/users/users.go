@@ -6,6 +6,7 @@ import (
 	"ToDoWithKolya/internal/service/users"
 	"errors"
 	"fmt"
+	"go.mongodb.org/mongo-driver/mongo"
 	"html/template"
 	"net/http"
 )
@@ -16,7 +17,7 @@ type Handler struct {
 	signIn *template.Template
 }
 
-func NewHandler(service users.Service) Handler {
+func New(service users.Service) Handler {
 	signUp, err := template.ParseFiles("./internal/templates/users/sign-up.html")
 	if err != nil {
 		panic(err)
@@ -57,13 +58,13 @@ func (h Handler) SignUpPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ok := h.srv.UserCheckExist(user.Login)
+	ok := h.srv.UserCheckExist(r.Context(), user.Login)
 	if ok {
 		http.Redirect(w, r, "/sign-up?status=this user already exist", http.StatusSeeOther)
 		return
 	}
 
-	session, err := h.srv.Register(user)
+	session, err := h.srv.SignUp(r.Context(), user)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
@@ -90,7 +91,7 @@ func (h Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 func (h Handler) SignInPost(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
-	req := models.LoginRequest{
+	req := models.Input{
 		Login:    username,
 		Password: password,
 	}
@@ -101,9 +102,9 @@ func (h Handler) SignInPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := h.srv.Login(req)
+	session, err := h.srv.SignIn(r.Context(), req)
 	if err != nil {
-		if errors.Is(err, models.ErrNotFound) {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			http.Redirect(w, r, "/sign-in?status=wrong login or password", http.StatusSeeOther)
 			return
 		}
@@ -118,23 +119,4 @@ func (h Handler) SignInPost(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, cookie)
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
-}
-
-func (h Handler) Logout(w http.ResponseWriter, r *http.Request) {
-	session, err := r.Cookie("session")
-	if err != nil {
-		errs.HandleError(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	h.srv.Logout(session.Value)
-	cookie := &http.Cookie{
-		Name:   "session",
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1,
-	}
-	http.SetCookie(w, cookie)
-
-	http.Redirect(w, r, "/sign-in", http.StatusSeeOther)
 }

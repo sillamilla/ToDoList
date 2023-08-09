@@ -2,10 +2,16 @@ package helper
 
 import (
 	"ToDoWithKolya/internal/models"
+	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/mongo"
 	"io"
 	"log"
 	"net/http"
@@ -13,9 +19,9 @@ import (
 
 func SendError(w http.ResponseWriter, status int, err error) {
 	switch {
-	case errors.Is(err, models.ErrNotFound):
+	case errors.Is(err, mongo.ErrNoDocuments):
 		status = http.StatusNotFound
-	case errors.Is(err, models.ErrUnauthorized):
+	case errors.Is(err, mongo.ErrNoDocuments): //todo not correct cases
 		status = http.StatusUnauthorized
 	}
 
@@ -68,4 +74,35 @@ func UnmarshalAndValidate(r io.ReadCloser, v Validator) ([]string, error) {
 	}
 
 	return nil, nil
+}
+
+func GenerateSession() (string, error) {
+	buf := make([]byte, 32)
+
+	_, err := rand.Read(buf)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.StdEncoding.EncodeToString(buf), nil
+}
+
+func HashGenerate(password string) string {
+	hashObject := sha256.New()
+	hashObject.Write([]byte(password))
+	hashedBytes := hashObject.Sum(nil)
+
+	hashedString := hex.EncodeToString(hashedBytes)
+
+	return hashedString
+}
+
+func HashVerify(password, hash string) bool {
+	hashedString := HashGenerate(password)
+	return hashedString == hash
+}
+
+func UserFromContext(ctx context.Context) (models.User, bool) {
+	user, ok := ctx.Value("users").(models.User)
+	return user, ok
 }

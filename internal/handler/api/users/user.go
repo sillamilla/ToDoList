@@ -12,7 +12,7 @@ type Handler struct {
 	srv users.Service
 }
 
-func NewHandler(service users.Service) Handler {
+func New(service users.Service) Handler {
 	return Handler{srv: service}
 }
 
@@ -28,7 +28,7 @@ func (h Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.srv.Register(newUser)
+	_, err = h.srv.SignUp(r.Context(), newUser)
 	if err != nil {
 		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("register, err: %w", err))
 		return
@@ -37,7 +37,7 @@ func (h Handler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) Login(w http.ResponseWriter, r *http.Request) {
-	var newUser models.LoginRequest
+	var newUser models.Input
 	validationErrs, err := helper.UnmarshalAndValidate(r.Body, &newUser)
 	if err != nil {
 		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("need to be registrated, err: %w", err))
@@ -47,7 +47,7 @@ func (h Handler) Login(w http.ResponseWriter, r *http.Request) {
 		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("validation, err: %s", validationErrs))
 		return
 	}
-	session, err := h.srv.Login(newUser)
+	session, err := h.srv.SignIn(r.Context(), newUser)
 	if err != nil {
 		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("login, err: %w", err))
 		return
@@ -60,20 +60,4 @@ func (h Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//todo check return res( or writeHead(res))
-}
-
-func (h Handler) Logout(w http.ResponseWriter, r *http.Request) {
-	key := r.Header.Get("Authorization")
-	if len(key) != 44 {
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("key, err: %s", key))
-		return
-	}
-
-	err := h.srv.Logout(key)
-	if err != nil {
-		helper.SendError(w, http.StatusBadRequest, fmt.Errorf("login, err: %w", err))
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
 }

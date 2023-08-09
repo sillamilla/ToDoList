@@ -2,18 +2,21 @@ package service
 
 import (
 	"ToDoWithKolya/internal/repository"
-	"ToDoWithKolya/internal/service/task"
+	"ToDoWithKolya/internal/service/sessions"
+	"ToDoWithKolya/internal/service/tasks"
 	"ToDoWithKolya/internal/service/users"
 )
 
 type Service struct {
-	TaskSrv task.Service
-	UserSrv users.Service
+	Tasks    tasks.Service
+	Users    users.Service
+	Sessions sessions.Service
 }
 
 func New(rp *repository.Repo) *Service {
 	return &Service{
-		TaskSrv: task.NewTaskService(rp.TaskRepo),
-		UserSrv: users.NewUserService(rp.UserRepo),
+		Tasks:    tasks.New(rp.Task),
+		Users:    users.New(rp.User),
+		Sessions: sessions.New(rp.Session),
 	}
 }

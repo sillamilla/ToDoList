@@ -23,7 +23,7 @@ type SearchAndStatus struct {
 	Status string `json:"status,omitempty"`
 }
 
-type LoginRequest struct {
+type Input struct {
 	Login    string `json:"login,omitempty"`
 	Password string `json:"password,omitempty"`
 }

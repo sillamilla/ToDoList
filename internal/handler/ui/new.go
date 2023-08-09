@@ -1,8 +1,9 @@
 package ui
 
 import (
-	"ToDoWithKolya/internal/ctxpkg"
+	"ToDoWithKolya/internal/handler/helper"
 	"ToDoWithKolya/internal/handler/ui/errs"
+	sessions "ToDoWithKolya/internal/handler/ui/sessions"
 	"ToDoWithKolya/internal/handler/ui/tasks"
 	"ToDoWithKolya/internal/handler/ui/users"
 	"ToDoWithKolya/internal/models"
@@ -13,10 +14,12 @@ import (
 )
 
 type Handler struct {
-	TaskHandler tasks.Handler
-	UserHandler users.Handler
-	Home        *template.Template
-	srv         *service.Service
+	Task    tasks.Handler
+	User    users.Handler
+	Session sessions.Handler
+
+	Home *template.Template
+	srv  *service.Service
 }
 
 func New(srv *service.Service) Handler {
@@ -26,28 +29,30 @@ func New(srv *service.Service) Handler {
 	}
 
 	return Handler{
-		TaskHandler: tasks.NewHandler(srv.TaskSrv),
-		UserHandler: users.NewHandler(srv.UserSrv),
-		Home:        home,
-		srv:         srv,
+		Task:    tasks.New(srv.Tasks),
+		User:    users.New(srv.Users),
+		Session: sessions.New(srv.Sessions),
+
+		Home: home,
+		srv:  srv,
 	}
 }
 
 func (h Handler) HomePage(w http.ResponseWriter, r *http.Request) {
-	user, ok := ctxpkg.UserFromContext(r.Context())
+	user, ok := helper.UserFromContext(r.Context())
 	if !ok {
 		http.Redirect(w, r, "/sign-in", http.StatusSeeOther)
 		return
 	}
 
-	tasks, err := h.srv.TaskSrv.GetTasksByUserID(user.ID)
+	tasks, err := h.srv.Tasks.GetTasks(r.Context(), user.ID)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	sort.Slice(tasks, func(i, j int) bool {
-		if tasks[i].CreatedDate.After(tasks[j].CreatedDate) {
+		if tasks[i].CreatedAt.After(tasks[j].CreatedAt) {
 			return true
 		}
 		return false

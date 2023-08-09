@@ -1,10 +1,9 @@
 package task
 
 import (
-	"ToDoWithKolya/internal/ctxpkg"
 	"ToDoWithKolya/internal/handler/helper"
 	"ToDoWithKolya/internal/models"
-	"ToDoWithKolya/internal/service/task"
+	"ToDoWithKolya/internal/service/tasks"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -12,10 +11,10 @@ import (
 )
 
 type Handler struct {
-	srv task.Service
+	srv tasks.Service
 }
 
-func NewHandler(service task.Service) Handler {
+func New(service tasks.Service) Handler {
 	return Handler{srv: service}
 }
 
@@ -31,7 +30,7 @@ func (h Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := ctxpkg.UserFromContext(r.Context())
+	user, ok := helper.UserFromContext(r.Context())
 	if !ok {
 		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("user from ctx, err %v", ok))
 		return
@@ -39,7 +38,7 @@ func (h Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	newtask.UserID = user.ID
 
-	err = h.srv.Create(newtask)
+	err = h.srv.NewTask(r.Context(), newtask)
 	if err != nil {
 		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("create, err %w", err))
 		return
@@ -51,7 +50,7 @@ func (h Handler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
-	user, ok := ctxpkg.UserFromContext(r.Context())
+	user, ok := helper.UserFromContext(r.Context())
 	if !ok {
 		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("user from ctx, err %v", ok))
 		return
@@ -71,7 +70,7 @@ func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
 	taskID := helper.FromURL(r, "id")
 	updatedTask.ID = taskID
 
-	err = h.srv.Edit(updatedTask, user.ID)
+	err = h.srv.Edit(r.Context(), updatedTask, user.ID)
 	if err != nil {
 		helper.SendError(w, http.StatusBadRequest, fmt.Errorf("edit, err %w", err))
 		return
@@ -83,16 +82,16 @@ func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
 func (h Handler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 	id := helper.FromURL(r, "id")
 
-	user, ok := ctxpkg.UserFromContext(r.Context())
+	user, ok := helper.UserFromContext(r.Context())
 	if !ok {
 		helper.SendError(w, http.StatusUnauthorized, fmt.Errorf("context, err %v", ok))
 		return
 	}
 
-	task, err := h.srv.GetByID(id)
+	task, err := h.srv.GetByID(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			helper.SendError(w, http.StatusNotFound, fmt.Errorf("task doesnt exist, err: %w", err))
+			helper.SendError(w, http.StatusNotFound, fmt.Errorf("tasks doesnt exist, err: %w", err))
 			return
 		}
 		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("sql err: %w", err))
@@ -100,7 +99,7 @@ func (h Handler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user.ID != task.UserID {
-		helper.SendError(w, http.StatusForbidden, fmt.Errorf("not your task, err: %v", false))
+		helper.SendError(w, http.StatusForbidden, fmt.Errorf("not your tasks, err: %v", false))
 		return
 	}
 
@@ -113,15 +112,15 @@ func (h Handler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 func (h Handler) DeleteByTaskID(w http.ResponseWriter, r *http.Request) {
 	id := helper.FromURL(r, "id")
 
-	user, ok := ctxpkg.UserFromContext(r.Context())
+	user, ok := helper.UserFromContext(r.Context())
 	if !ok {
 		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("user from ctx, err: %v", ok))
 		return
 	}
 
-	err := h.srv.DeleteByTaskID(id, user.ID)
+	err := h.srv.Delete(r.Context(), id, user.ID)
 	if err != nil {
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("delete task by id, err: %w", err))
+		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("delete tasks by id, err: %w", err))
 		return
 	}
 
@@ -129,14 +128,14 @@ func (h Handler) DeleteByTaskID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) GetTasksByUserID(w http.ResponseWriter, r *http.Request) {
-	user, b := ctxpkg.UserFromContext(r.Context())
+	user, b := helper.UserFromContext(r.Context())
 	if !b {
 		helper.SendError(w, http.StatusForbidden, fmt.Errorf("send json, err: %v", b))
 	}
 
-	tasks, err := h.srv.GetTasksByUserID(user.ID)
+	tasks, err := h.srv.GetTasks(r.Context(), user.ID)
 	if err != nil {
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("get task by id, err: %w", err))
+		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("get tasks by id, err: %w", err))
 		return
 	}
 
