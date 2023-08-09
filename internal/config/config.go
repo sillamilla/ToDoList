@@ -21,6 +21,11 @@ var (
 
 type Config struct {
 	Mongo Mongo
+	HTTP  HTTP
+}
+
+type HTTP struct {
+	Port string
 }
 
 type Mongo struct {
@@ -41,10 +46,18 @@ func GetConfig() *Config {
 			panic("MONGO_DB_NAME is not set")
 		}
 
+		port := os.Getenv("PORT")
+		if name == "" {
+			panic("PORT is not set")
+		}
+
 		c = &Config{
 			Mongo: Mongo{
 				Address: address,
 				DBName:  name,
+			},
+			HTTP: HTTP{
+				Port: port,
 			},
 		}
 

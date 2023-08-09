@@ -22,7 +22,7 @@ func (h Handler) Authorization(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		sessionExpireTime := lastActive.Add(30 * time.Minute)
+		sessionExpireTime := lastActive.Add(170 * time.Hour)
 		if sessionExpireTime.Before(time.Now()) {
 			h.Logout(w, r)
 		}
@@ -36,6 +36,7 @@ func (h Handler) Authorization(next http.HandlerFunc) http.HandlerFunc {
 		ctx := r.Context()
 		ctxWithUser := context.WithValue(ctx, "users", user)
 		r = r.WithContext(ctxWithUser)
+
 		next(w, r)
 	}
 }

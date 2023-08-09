@@ -2,13 +2,16 @@ package main
 
 import (
 	"ToDoWithKolya/internal/config"
+	"ToDoWithKolya/internal/handler/api"
+	ui2 "ToDoWithKolya/internal/handler/ui"
 	"ToDoWithKolya/internal/repository"
 	"ToDoWithKolya/internal/service"
 	"context"
-	"fmt"
+	"github.com/go-chi/chi/v5"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
+	"net/http"
 )
 
 func main() {
@@ -25,12 +28,12 @@ func main() {
 		}
 	}()
 
-	//defer func(dbMongo *mongo.Client, ctx context.Context) {
-	//	err = dbMongo.Disconnect(ctx)
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	}
-	//}(dbMongo, context.Background())
+	defer func(dbMongo *mongo.Client, ctx context.Context) {
+		err = dbMongo.Disconnect(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(dbMongo, context.Background())
 
 	err = dbMongo.Ping(context.Background(), nil)
 	if err != nil {
@@ -39,52 +42,55 @@ func main() {
 
 	repo := repository.New(dbMongo.Database(cfg.Mongo.DBName, nil))
 	srv := service.New(repo)
-	fmt.Print(srv)
-	//r := mux.NewRouter()
-	//
-	//{
-	//	apiHnd := api.New(srv)
-	//	api := r.PathPrefix("/api").Subrouter()
-	//	auth := apiHnd.UserHandler.Authorization
-	//
-	//	api.HandleFunc("/user", apiHnd.UserHandler.Register).Methods(http.MethodPost)
-	//	api.HandleFunc("/user/login", apiHnd.UserHandler.Login).Methods(http.MethodPost)
-	//	api.HandleFunc("/user", auth(apiHnd.UserHandler.Logout)).Methods(http.MethodDelete)
-	//
-	//	api.HandleFunc("/tasks", auth(apiHnd.TaskHandler.Create)).Methods(http.MethodPost)
-	//	api.HandleFunc("/tasks/edit/{id}", auth(apiHnd.TaskHandler.Edit)).Methods(http.MethodPost)
-	//	api.HandleFunc("/tasks", auth(apiHnd.TaskHandler.GetTasksByUserID)).Methods(http.MethodGet)
-	//	api.HandleFunc("/tasks/{id}", auth(apiHnd.TaskHandler.GetTaskByID)).Methods(http.MethodGet)
-	//	api.HandleFunc("/tasks/{id}", auth(apiHnd.TaskHandler.DeleteByTaskID)).Methods(http.MethodDelete)
-	//
-	//}
-	//
-	//{
-	//	uiHnd := ui.New(srv)
-	//	auth := uiHnd.User.Authorization
-	//
-	//	{
-	//		r.HandleFunc("/sign-up", uiHnd.User.SignUpPost).Methods(http.MethodPost)
-	//		r.HandleFunc("/sign-up", uiHnd.User.SignUp).Methods(http.MethodGet)
-	//		r.HandleFunc("/sign-in", uiHnd.User.SignInPost).Methods(http.MethodPost)
-	//		r.HandleFunc("/sign-in", uiHnd.User.SignIn).Methods(http.MethodGet)
-	//		r.HandleFunc("/logout", auth(uiHnd.User.Logout)).Methods(http.MethodGet)
-	//	}
-	//
-	//	{
-	//		r.HandleFunc("/", auth(uiHnd.HomePage)).Methods(http.MethodGet)
-	//		r.HandleFunc("/create", auth(uiHnd.Task.CreatePost)).Methods(http.MethodPost)
-	//		r.HandleFunc("/create", auth(uiHnd.Task.Create)).Methods(http.MethodGet)
-	//		r.HandleFunc("/edit/{id}", auth(uiHnd.Task.EditPost)).Methods(http.MethodPost)
-	//		r.HandleFunc("/edit/{id}", auth(uiHnd.Task.Edit)).Methods(http.MethodGet)
-	//		r.HandleFunc("/mark/{taskID}/{status}", auth(uiHnd.Task.MarkAsDone)).Methods(http.MethodGet)
-	//		r.HandleFunc("/search/{search}", auth(uiHnd.Task.Search)).Methods(http.MethodGet)
-	//		r.HandleFunc("/tasks/delete/{id}", auth(uiHnd.Task.Delete)).Methods(http.MethodGet)
-	//		r.HandleFunc("/tasks/deleteAll/{id}", auth(uiHnd.Task.Delete)).Methods(http.MethodGet)
-	//	}
-	//}
 
-	//if err = http.ListenAndServe(":8080", r); err != nil {
-	//	log.Fatal(err)
-	//}
+	// API Routes
+	{
+		api := api.New(srv)
+		auth := api.Session.Authorization
+
+		r := chi.NewRouter()
+		r.Handle("/api", http.StripPrefix("/api", r))
+
+		r.Post("/sign-up", api.User.Register)
+		r.Post("/sign-in", api.User.Login)
+		r.Delete("/logout", auth(api.Session.Logout))
+
+		r.Post("/new-task", auth(api.Task.Create))
+		r.Put("/task-edit", auth(api.Task.Edit))
+		r.Get("/task-get", auth(api.Task.TaskByID))
+		r.Delete("/task-delete", auth(api.Task.Delete))
+		r.Get("/task-get-all", auth(api.Task.GetTasks))
+
+		http.Handle("/api/", http.StripPrefix("/api", r))
+	}
+
+	// UI Routes
+	{
+		ui := ui2.New(srv)
+		auth := ui.Session.Authorization
+
+		r := chi.NewRouter()
+		r.Handle("/", http.StripPrefix("/", r))
+
+		r.Get("/sign-up", ui.User.SignUp)
+		r.Post("/sign-up", ui.User.SignUpPost)
+		r.Get("/sign-in", ui.User.SignIn)
+		r.Post("/sign-in", ui.User.SignInPost)
+		r.Delete("/logout", auth(ui.Session.Logout))
+
+		r.Get("/", auth(ui.HomePage))
+
+		r.Get("/create", auth(ui.Task.Create))
+		r.Post("/create", auth(ui.Task.CreatePost))
+		r.Get("/edit/{id}", auth(ui.Task.Edit))
+		r.Put("/edit/{id}", auth(ui.Task.EditPost))
+		r.Delete("/delete/{id}", auth(ui.Task.Delete))
+		r.Put("/mark/{id}/{status}", auth(ui.Task.MarkAsDone))
+		r.Get("/search/{search}", auth(ui.Task.Search))
+	}
+
+	if err = http.ListenAndServe(":"+cfg.HTTP.Port, nil); err != nil { //todo env port
+		log.Fatal(err)
+	}
+
 }

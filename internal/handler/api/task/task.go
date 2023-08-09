@@ -79,7 +79,7 @@ func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h Handler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
+func (h Handler) TaskByID(w http.ResponseWriter, r *http.Request) {
 	id := helper.FromURL(r, "id")
 
 	user, ok := helper.UserFromContext(r.Context())
@@ -109,7 +109,7 @@ func (h Handler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) DeleteByTaskID(w http.ResponseWriter, r *http.Request) {
+func (h Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := helper.FromURL(r, "id")
 
 	user, ok := helper.UserFromContext(r.Context())
@@ -127,7 +127,7 @@ func (h Handler) DeleteByTaskID(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h Handler) GetTasksByUserID(w http.ResponseWriter, r *http.Request) {
+func (h Handler) GetTasks(w http.ResponseWriter, r *http.Request) {
 	user, b := helper.UserFromContext(r.Context())
 	if !b {
 		helper.SendError(w, http.StatusForbidden, fmt.Errorf("send json, err: %v", b))
