@@ -10,11 +10,11 @@ import (
 type Service interface {
 	NewTask(ctx context.Context, task models.Task) error
 	GetTasks(ctx context.Context, userID string) ([]models.Task, error)
-	GetByID(ctx context.Context, id string) (models.Task, error)
-	Edit(ctx context.Context, task models.Task, userID string) error
+	GetByID(ctx context.Context, userID, id string) (models.Task, error)
+	Edit(ctx context.Context, task models.Task) error
 	SearchTasks(ctx context.Context, taskName, UserID string) ([]models.Task, error)
 	MarkValueSet(ctx context.Context, taskID string, status int) error
-	Delete(ctx context.Context, id string, userID string) error
+	Delete(ctx context.Context, userID, id string) error
 }
 
 type taskService struct {
@@ -33,8 +33,8 @@ func (s taskService) NewTask(ctx context.Context, task models.Task) error {
 	return nil
 }
 
-func (s taskService) Edit(ctx context.Context, task models.Task, userID string) error {
-	err := s.task.Update(ctx, task, userID)
+func (s taskService) Edit(ctx context.Context, task models.Task) error {
+	err := s.task.Update(ctx, task)
 	if err != nil {
 		return errors.Wrap(err, "Edit_Update err")
 	}
@@ -60,8 +60,8 @@ func (s taskService) MarkValueSet(ctx context.Context, taskID string, status int
 	return nil
 }
 
-func (s taskService) Delete(ctx context.Context, id string, userID string) error {
-	err := s.task.Delete(ctx, id, userID)
+func (s taskService) Delete(ctx context.Context, userID, id string) error {
+	err := s.task.Delete(ctx, userID, id)
 	if err != nil {
 		return errors.Wrap(err, "DeleteByTaskID_Delete err")
 	}
@@ -78,8 +78,8 @@ func (s taskService) GetTasks(ctx context.Context, userID string) ([]models.Task
 	return tasks, err
 }
 
-func (s taskService) GetByID(ctx context.Context, id string) (models.Task, error) {
-	task, err := s.task.Get(ctx, id)
+func (s taskService) GetByID(ctx context.Context, userID, id string) (models.Task, error) {
+	task, err := s.task.Get(ctx, userID, id)
 	if err != nil {
 		return models.Task{}, errors.Wrap(err, "GetByID_Get err")
 	}

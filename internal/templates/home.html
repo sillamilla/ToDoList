@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>To-Do-List</title>
-    <!-- Import Tailwind CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.16/tailwind.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
@@ -188,48 +187,9 @@
 
     <div class="w-2/6 mx-4 mx-auto p-4...">
 
-        <div class="mt-16 max-w-2xl mx-auto bg-gray-700 rounded-md shadow-lg p-3 mb-2 shadow-2xl">
-            <h1 class="text-1xl font-bold mb-3 text-center mx-auto">completed</h1>
-            <div class="flex flex-col items-center">
-                <button id="deleteAllButton" type="button" class="text-gray-800">
-                    <i class="fa fa-trash text-1xl"></i>
-                </button>
-            </div>
-            <script>
-                const deleteAllButton = document.getElementById('deleteAllButton');
-                deleteAllButton.addEventListener('click', function() {
-                        window.location.href = `/task/delete/1`;
-                });
-            </script>
-
-            {{range .Tasks}}
-                {{if eq .IsDone 1}}
-                    <div class="bg-gray-800 rounded-md shadow-md mb-1 p-4 flex shadow-2xl">
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center">
-                                <span class="text-lg font-light line-through text-gray-500">{{.Title}}</span>
-                            </div>
-                        </div>
-                        <div class="ml-auto">
-                                <button class="text-gray-600 transition duration-200 focus:outline-none back-button" task-id="{{.ID}}">back</button>
-                            <script>
-                                document.addEventListener('DOMContentLoaded', function() {
-                                    const backButtons = document.querySelectorAll('.back-button');
-
-                                    backButtons.forEach(button => {
-                                        button.addEventListener('click', () => {
-                                            const taskID = button.getAttribute('task-id');
-                                            window.location.href = `/mark/${taskID}/0`;
-                                        });
-                                    });
-                                });
-                            </script>
-
-                        </div>
-                    </div>
-                {{end}}
-            {{end}}
+        <div class="mt-16 max-w-2xl mx-auto">
         </div>
+        <h2 class="text-lg font-semibold mb-2"></h2>
     </div>
 
     <div class="w-1/6 mx-4">

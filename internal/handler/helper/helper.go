@@ -1,44 +1,17 @@
 package helper
 
 import (
-	"ToDoWithKolya/internal/models"
-	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 	"io"
-	"log"
 	"net/http"
 )
 
-func SendError(w http.ResponseWriter, status int, err error) {
-	switch {
-	case errors.Is(err, mongo.ErrNoDocuments):
-		status = http.StatusNotFound
-	case errors.Is(err, mongo.ErrNoDocuments): //todo not correct cases
-		status = http.StatusUnauthorized
-	}
-
-	if status != http.StatusInternalServerError {
-		fmt.Fprintf(w, "error: %s", err)
-	}
-
+func SendError(w http.ResponseWriter, status int, errMsg string) {
 	w.WriteHeader(status)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func FromURL(r *http.Request, key string) string {
-	value := mux.Vars(r)[key]
-
-	return value
+	io.WriteString(w, errMsg)
 }
 
 func SendJson(w http.ResponseWriter, data interface{}, status int) error {
@@ -87,22 +60,15 @@ func GenerateSession() (string, error) {
 	return base64.StdEncoding.EncodeToString(buf), nil
 }
 
-func HashGenerate(password string) string {
-	hashObject := sha256.New()
-	hashObject.Write([]byte(password))
-	hashedBytes := hashObject.Sum(nil)
+func HashPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
 
-	hashedString := hex.EncodeToString(hashedBytes)
-
-	return hashedString
+	return string(hashedPassword), nil
 }
 
-func HashVerify(password, hash string) bool {
-	hashedString := HashGenerate(password)
-	return hashedString == hash
-}
-
-func UserFromContext(ctx context.Context) (models.User, bool) {
-	user, ok := ctx.Value("users").(models.User)
-	return user, ok
+func ComparePassword(hashedPassword, password string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }

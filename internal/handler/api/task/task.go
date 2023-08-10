@@ -4,9 +4,10 @@ import (
 	"ToDoWithKolya/internal/handler/helper"
 	"ToDoWithKolya/internal/models"
 	"ToDoWithKolya/internal/service/tasks"
-	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/go-chi/chi/v5"
+	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 )
 
@@ -19,60 +20,51 @@ func New(service tasks.Service) Handler {
 }
 
 func (h Handler) Create(w http.ResponseWriter, r *http.Request) {
-	var newtask models.Task
-	validationErrs, err := helper.UnmarshalAndValidate(r.Body, &newtask)
+	var task models.Task
+
+	validationErrs, err := helper.UnmarshalAndValidate(r.Body, &task)
 	if err != nil {
-		helper.SendError(w, http.StatusBadRequest, fmt.Errorf("unmarshal and validate, err: %w", err))
+		helper.SendError(w, http.StatusBadRequest, fmt.Sprintf("unmarshal and validate, err: %w", err))
 		return
 	}
 	if validationErrs != nil {
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("validation, err: %s", validationErrs))
+		helper.SendError(w, http.StatusInternalServerError, fmt.Sprintf("validation, err: %s", validationErrs))
 		return
 	}
 
-	user, ok := helper.UserFromContext(r.Context())
+	user, ok := r.Context().Value("user").(models.User)
 	if !ok {
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("user from ctx, err %v", ok))
+		helper.SendError(w, http.StatusInternalServerError, fmt.Sprintf("user from ctx, err %v", ok))
 		return
 	}
 
-	newtask.UserID = user.ID
-
-	err = h.srv.NewTask(r.Context(), newtask)
+	task.UserID = user.ID
+	err = h.srv.NewTask(r.Context(), task)
 	if err != nil {
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("create, err %w", err))
+		helper.SendError(w, http.StatusInternalServerError, fmt.Sprintf("create, err %w", err))
 		return
 	}
 
 	//todo wrong session error
-
 	w.WriteHeader(http.StatusCreated)
 }
 
 func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
-	user, ok := helper.UserFromContext(r.Context())
-	if !ok {
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("user from ctx, err %v", ok))
-		return
-	}
-
 	var updatedTask models.Task
+
 	validationErrs, err := helper.UnmarshalAndValidate(r.Body, &updatedTask)
 	if err != nil {
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("unmarshal, err: %w", err))
+		helper.SendError(w, http.StatusInternalServerError, fmt.Sprintf("unmarshal, err: %w", err))
 		return
 	}
 	if validationErrs != nil {
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("validation, err: %s", validationErrs))
+		helper.SendError(w, http.StatusInternalServerError, fmt.Sprintf("validation, err: %s", validationErrs))
 		return
 	}
 
-	taskID := helper.FromURL(r, "id")
-	updatedTask.ID = taskID
-
-	err = h.srv.Edit(r.Context(), updatedTask, user.ID)
+	err = h.srv.Edit(r.Context(), updatedTask)
 	if err != nil {
-		helper.SendError(w, http.StatusBadRequest, fmt.Errorf("edit, err %w", err))
+		helper.SendError(w, http.StatusBadRequest, fmt.Sprintf("edit, err %w", err))
 		return
 	}
 
@@ -80,47 +72,40 @@ func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) TaskByID(w http.ResponseWriter, r *http.Request) {
-	id := helper.FromURL(r, "id")
-
-	user, ok := helper.UserFromContext(r.Context())
+	user, ok := r.Context().Value("user").(models.User)
 	if !ok {
-		helper.SendError(w, http.StatusUnauthorized, fmt.Errorf("context, err %v", ok))
+		helper.SendError(w, http.StatusUnauthorized, fmt.Sprintf("user not found in ctx"))
 		return
 	}
 
-	task, err := h.srv.GetByID(r.Context(), id)
+	id := chi.URLParam(r, "id")
+	task, err := h.srv.GetByID(r.Context(), user.ID, id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			helper.SendError(w, http.StatusNotFound, fmt.Errorf("tasks doesnt exist, err: %w", err))
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			helper.SendError(w, http.StatusNotFound, fmt.Sprintf("tasks doesnt exist, err: %w", err))
 			return
 		}
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("sql err: %w", err))
-		return
-	}
-
-	if user.ID != task.UserID {
-		helper.SendError(w, http.StatusForbidden, fmt.Errorf("not your tasks, err: %v", false))
+		helper.SendError(w, http.StatusInternalServerError, fmt.Sprintf("get by id, err: %w", err))
 		return
 	}
 
 	if err = helper.SendJson(w, task, http.StatusOK); err != nil {
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("send json, err: %w", err))
+		helper.SendError(w, http.StatusInternalServerError, fmt.Sprintf("send json, err: %w", err))
 		return
 	}
 }
 
 func (h Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	id := helper.FromURL(r, "id")
-
-	user, ok := helper.UserFromContext(r.Context())
+	user, ok := r.Context().Value("user").(models.User)
 	if !ok {
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("user from ctx, err: %v", ok))
+		helper.SendError(w, http.StatusBadRequest, fmt.Sprintf("user not found in ctx"))
 		return
 	}
 
-	err := h.srv.Delete(r.Context(), id, user.ID)
+	id := chi.URLParam(r, "id")
+	err := h.srv.Delete(r.Context(), user.ID, id)
 	if err != nil {
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("delete tasks by id, err: %w", err))
+		helper.SendError(w, http.StatusInternalServerError, fmt.Sprintf("delete tasks by id, err: %", err))
 		return
 	}
 
@@ -128,19 +113,20 @@ func (h Handler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) GetTasks(w http.ResponseWriter, r *http.Request) {
-	user, b := helper.UserFromContext(r.Context())
-	if !b {
-		helper.SendError(w, http.StatusForbidden, fmt.Errorf("send json, err: %v", b))
+	user, ok := r.Context().Value("user").(models.User)
+	if !ok {
+		helper.SendError(w, http.StatusUnauthorized, fmt.Sprintf("user not found in ctx"))
+		return
 	}
 
 	tasks, err := h.srv.GetTasks(r.Context(), user.ID)
 	if err != nil {
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("get tasks by id, err: %w", err))
+		helper.SendError(w, http.StatusInternalServerError, fmt.Sprintf("get tasks by id, err: %w", err))
 		return
 	}
 
 	if err = helper.SendJson(w, tasks, http.StatusOK); err != nil {
-		helper.SendError(w, http.StatusInternalServerError, fmt.Errorf("send json, err: %w", err))
+		helper.SendError(w, http.StatusInternalServerError, fmt.Sprintf("send json, err: %w", err))
 		return
 	}
 }

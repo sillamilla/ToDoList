@@ -4,8 +4,10 @@ import (
 	"ToDoWithKolya/internal/handler/ui/errs"
 	"ToDoWithKolya/internal/models"
 	"ToDoWithKolya/internal/service/users"
+	"context"
 	"errors"
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"go.mongodb.org/mongo-driver/mongo"
 	"html/template"
 	"net/http"
@@ -34,7 +36,7 @@ func New(service users.Service) Handler {
 }
 
 func (h Handler) SignUp(w http.ResponseWriter, r *http.Request) {
-	validationErr := r.URL.Query().Get("status")
+	validationErr := chi.URLParam(r, "status")
 	err := h.signUp.Execute(w, validationErr)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
@@ -43,28 +45,25 @@ func (h Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) SignUpPost(w http.ResponseWriter, r *http.Request) {
-	username := r.FormValue("username")
-	password := r.FormValue("password")
-	email := r.FormValue("email")
-	user := models.User{
-		Login:    username,
-		Password: password,
-		Email:    email,
+	userInput := models.Input{
+		Login:    r.FormValue("username"),
+		Password: r.FormValue("password"),
+		Email:    r.FormValue("email"),
 	}
 
-	if validatorErr := errs.Validate(user); validatorErr != "" {
+	if validatorErr := errs.Validate(userInput); validatorErr != "" {
 		link := fmt.Sprintf("/sign-up?status=%s", validatorErr)
 		http.Redirect(w, r, link, http.StatusSeeOther)
 		return
 	}
 
-	ok := h.srv.UserCheckExist(r.Context(), user.Login)
+	ok := h.srv.UserCheckExist(r.Context(), userInput.Login)
 	if ok {
 		http.Redirect(w, r, "/sign-up?status=this user already exist", http.StatusSeeOther)
 		return
 	}
 
-	session, err := h.srv.SignUp(r.Context(), user)
+	user, err := h.srv.SignUp(r.Context(), userInput)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
@@ -72,15 +71,16 @@ func (h Handler) SignUpPost(w http.ResponseWriter, r *http.Request) {
 
 	cookie := &http.Cookie{
 		Name:  "session",
-		Value: session,
+		Value: user.Session,
 	}
 	http.SetCookie(w, cookie)
+	context.WithValue(r.Context(), "user", user)
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (h Handler) SignIn(w http.ResponseWriter, r *http.Request) {
-	ok := r.URL.Query().Get("status")
+	ok := chi.URLParam(r, "status")
 	err := h.signIn.Execute(w, ok)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
@@ -89,20 +89,18 @@ func (h Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) SignInPost(w http.ResponseWriter, r *http.Request) {
-	username := r.FormValue("username")
-	password := r.FormValue("password")
-	req := models.Input{
-		Login:    username,
-		Password: password,
+	userInput := models.Input{
+		Login:    r.FormValue("username"),
+		Password: r.FormValue("password"),
 	}
 
-	if validatorErr := errs.Validate(req); validatorErr != "" {
+	if validatorErr := errs.Validate(userInput); validatorErr != "" {
 		link := fmt.Sprintf("/sign-in?status=%s", validatorErr)
 		http.Redirect(w, r, link, http.StatusSeeOther)
 		return
 	}
 
-	session, err := h.srv.SignIn(r.Context(), req)
+	user, err := h.srv.SignIn(r.Context(), userInput)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			http.Redirect(w, r, "/sign-in?status=wrong login or password", http.StatusSeeOther)
@@ -114,9 +112,34 @@ func (h Handler) SignInPost(w http.ResponseWriter, r *http.Request) {
 
 	cookie := &http.Cookie{
 		Name:  "session",
-		Value: session,
+		Value: user.Session,
 	}
 	http.SetCookie(w, cookie)
+	context.WithValue(r.Context(), "user", user)
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (h Handler) Logout(w http.ResponseWriter, r *http.Request) {
+	session, err := r.Cookie("session")
+	if err != nil {
+		errs.HandleError(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	err = h.srv.Logout(r.Context(), session.Value)
+	if err != nil {
+		errs.HandleError(w, err, http.StatusInternalServerError)
+		return
+	}
+	cookie := &http.Cookie{
+		Name:   "session",
+		Value:  "",
+		Path:   "/",
+		MaxAge: -1,
+	}
+	http.SetCookie(w, cookie)
+	context.WithValue(r.Context(), "user", nil)
+
+	http.Redirect(w, r, "/sign-in", http.StatusSeeOther)
 }

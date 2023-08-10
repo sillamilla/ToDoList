@@ -36,6 +36,7 @@ func main() {
 	}(dbMongo, context.Background())
 
 	err = dbMongo.Ping(context.Background(), nil)
+
 	if err != nil {
 		log.Fatal("Connect error Mongo:", err)
 	}
@@ -46,20 +47,20 @@ func main() {
 	// API Routes
 	{
 		api := api.New(srv)
-		auth := api.Session.Authorization
+		auth := api.User.Authorization
 
 		r := chi.NewRouter()
 		r.Handle("/api", http.StripPrefix("/api", r))
 
-		r.Post("/sign-up", api.User.Register)
-		r.Post("/sign-in", api.User.Login)
-		r.Delete("/logout", auth(api.Session.Logout))
+		r.Post("/sign-up", api.User.SignUp)
+		r.Post("/sign-in", api.User.SignIn)
+		r.Delete("/logout", auth(api.User.Logout))
 
-		r.Post("/new-task", auth(api.Task.Create))
-		r.Put("/task-edit", auth(api.Task.Edit))
-		r.Get("/task-get", auth(api.Task.TaskByID))
-		r.Delete("/task-delete", auth(api.Task.Delete))
-		r.Get("/task-get-all", auth(api.Task.GetTasks))
+		r.Post("/create", auth(api.Task.Create))
+		r.Put("/edit", auth(api.Task.Edit))
+		r.Get("/task/{id}", auth(api.Task.TaskByID))
+		r.Delete("/delete/{id}", auth(api.Task.Delete))
+		r.Get("/tasks", auth(api.Task.GetTasks))
 
 		http.Handle("/api/", http.StripPrefix("/api", r))
 	}
@@ -67,7 +68,7 @@ func main() {
 	// UI Routes
 	{
 		ui := ui2.New(srv)
-		auth := ui.Session.Authorization
+		auth := ui.User.Authorization
 
 		r := chi.NewRouter()
 		r.Handle("/", http.StripPrefix("/", r))
@@ -76,7 +77,7 @@ func main() {
 		r.Post("/sign-up", ui.User.SignUpPost)
 		r.Get("/sign-in", ui.User.SignIn)
 		r.Post("/sign-in", ui.User.SignInPost)
-		r.Delete("/logout", auth(ui.Session.Logout))
+		r.Delete("/logout", auth(ui.User.Logout))
 
 		r.Get("/", auth(ui.HomePage))
 
@@ -89,7 +90,7 @@ func main() {
 		r.Get("/search/{search}", auth(ui.Task.Search))
 	}
 
-	if err = http.ListenAndServe(":"+cfg.HTTP.Port, nil); err != nil { //todo env port
+	if err = http.ListenAndServe(":"+cfg.HTTP.Port, nil); err != nil {
 		log.Fatal(err)
 	}
 

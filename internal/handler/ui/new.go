@@ -1,9 +1,7 @@
 package ui
 
 import (
-	"ToDoWithKolya/internal/handler/helper"
 	"ToDoWithKolya/internal/handler/ui/errs"
-	sessions "ToDoWithKolya/internal/handler/ui/sessions"
 	"ToDoWithKolya/internal/handler/ui/tasks"
 	"ToDoWithKolya/internal/handler/ui/users"
 	"ToDoWithKolya/internal/models"
@@ -14,9 +12,8 @@ import (
 )
 
 type Handler struct {
-	Task    tasks.Handler
-	User    users.Handler
-	Session sessions.Handler
+	Task tasks.Handler
+	User users.Handler
 
 	Home *template.Template
 	srv  *service.Service
@@ -29,9 +26,8 @@ func New(srv *service.Service) Handler {
 	}
 
 	return Handler{
-		Task:    tasks.New(srv.Tasks),
-		User:    users.New(srv.Users),
-		Session: sessions.New(srv.Sessions),
+		Task: tasks.New(srv.Tasks),
+		User: users.New(srv.Users),
 
 		Home: home,
 		srv:  srv,
@@ -39,7 +35,7 @@ func New(srv *service.Service) Handler {
 }
 
 func (h Handler) HomePage(w http.ResponseWriter, r *http.Request) {
-	user, ok := helper.UserFromContext(r.Context())
+	user, ok := r.Context().Value("user").(models.User)
 	if !ok {
 		http.Redirect(w, r, "/sign-in", http.StatusSeeOther)
 		return

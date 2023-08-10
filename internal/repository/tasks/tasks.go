@@ -9,12 +9,12 @@ import (
 
 type Tasks interface {
 	Create(ctx context.Context, task models.Task) error
-	Update(ctx context.Context, task models.Task, userID string) error
+	Update(ctx context.Context, task models.Task) error
 	GetAll(ctx context.Context, userID string) ([]models.Task, error)
-	Get(ctx context.Context, id string) (models.Task, error)
+	Get(ctx context.Context, userID, id string) (models.Task, error)
 	MarkValueSet(ctx context.Context, taskID string, status int) error
 	Search(ctx context.Context, taskName, userID string) ([]models.Task, error)
-	Delete(ctx context.Context, id, userID string) error
+	Delete(ctx context.Context, userID, id string) error
 }
 
 type tasks struct {
@@ -36,8 +36,10 @@ func (r tasks) Create(ctx context.Context, task models.Task) error {
 	return nil
 }
 
-func (r tasks) Delete(ctx context.Context, taskID, userID string) error {
-	_, err := r.db.DeleteOne(ctx, bson.M{"id": taskID, "user_id": userID})
+func (r tasks) Delete(ctx context.Context, userID, id string) error {
+	filter := bson.M{"user_id": userID, "id": id}
+
+	_, err := r.db.DeleteOne(ctx, filter)
 	if err != nil {
 		return err
 	}
@@ -45,8 +47,8 @@ func (r tasks) Delete(ctx context.Context, taskID, userID string) error {
 	return nil
 }
 
-func (r tasks) Update(ctx context.Context, task models.Task, userID string) error {
-	filter := bson.M{"id": task.ID, "user_id": userID}
+func (r tasks) Update(ctx context.Context, task models.Task) error {
+	filter := bson.M{"user_id": task.UserID, "id": task.ID}
 	update := bson.M{"$set": bson.M{"title": task.Title, "description": task.Description}}
 
 	_, err := r.db.UpdateOne(ctx, filter, update)
@@ -79,10 +81,11 @@ func (r tasks) GetAll(ctx context.Context, userID string) ([]models.Task, error)
 	return tasksDoc, nil
 }
 
-func (r tasks) Get(ctx context.Context, id string) (models.Task, error) {
+func (r tasks) Get(ctx context.Context, userID, id string) (models.Task, error) {
 	var task models.Task
+	filter := bson.M{"user_id": userID, "id": id}
 
-	err := r.db.FindOne(ctx, bson.M{"id": id}).Decode(&task)
+	err := r.db.FindOne(ctx, filter).Decode(&task)
 	if err != nil {
 		return models.Task{}, err
 	}

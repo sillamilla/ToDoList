@@ -26,16 +26,9 @@ func HandleError(w http.ResponseWriter, newErr error, status int) {
 		panic(tmplErr)
 	}
 
-	var redirect string
-	switch newErr.Error() {
-	default:
-		redirect = home
-	}
-
 	stuff := Errors{
-		Status:   status,
-		Err:      newErr.Error(),
-		Redirect: redirect,
+		Status: status,
+		Err:    newErr.Error(),
 	}
 
 	err := errorPage.Execute(w, stuff)
