@@ -7,7 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type Tasks interface {
+type Repo interface {
 	Create(ctx context.Context, task models.Task) error
 	Update(ctx context.Context, task models.Task) error
 	GetAll(ctx context.Context, userID string) ([]models.Task, error)
@@ -21,7 +21,7 @@ type tasks struct {
 	db *mongo.Collection
 }
 
-func New(database *mongo.Database) Tasks {
+func New(database *mongo.Database) Repo {
 	return tasks{
 		db: database.Collection("tasks"),
 	}

@@ -15,8 +15,8 @@ func (u User) Validate() []string {
 	case u.Email != "" && !email.MatchString(u.Email):
 		errs = append(errs, "wrong email")
 
-	case utf8.RuneCountInString(u.Login) < 4 || utf8.RuneCountInString(u.Login) > 15:
-		errs = append(errs, "wrong login len")
+	case utf8.RuneCountInString(u.Username) < 4 || utf8.RuneCountInString(u.Username) > 15:
+		errs = append(errs, "wrong username len")
 
 	case utf8.RuneCountInString(u.Password) < 4 || utf8.RuneCountInString(u.Password) > 60:
 		errs = append(errs, "wrong password len")
@@ -26,12 +26,12 @@ func (u User) Validate() []string {
 	return errs
 }
 
-func (r Input) Validate() []string {
+func (r UserInput) Validate() []string {
 	errs := make([]string, 0, 2)
 
 	switch {
-	case utf8.RuneCountInString(r.Login) < 4 || utf8.RuneCountInString(r.Login) > 15:
-		errs = append(errs, "wrong login len")
+	case utf8.RuneCountInString(r.Username) < 4 || utf8.RuneCountInString(r.Username) > 15:
+		errs = append(errs, "wrong username len")
 	case utf8.RuneCountInString(r.Password) < 4 || utf8.RuneCountInString(r.Password) > 60:
 		errs = append(errs, "wrong password len")
 	}

@@ -14,12 +14,6 @@ type Errors struct {
 	Redirect string
 }
 
-const (
-	signUp = "/sign-up"
-	signIn = "/sign-in"
-	home   = "/"
-)
-
 func HandleError(w http.ResponseWriter, newErr error, status int) {
 	errorPage, tmplErr := template.ParseFiles("./internal/templates/errs/errors.html")
 	if tmplErr != nil {

@@ -47,20 +47,20 @@ func main() {
 	// API Routes
 	{
 		api := api.New(srv)
-		auth := api.User.Authorization
+		auth := api.Auth.Authorization
 
 		r := chi.NewRouter()
 		r.Handle("/api", http.StripPrefix("/api", r))
 
-		r.Post("/sign-up", api.User.SignUp)
-		r.Post("/sign-in", api.User.SignIn)
-		r.Delete("/logout", auth(api.User.Logout))
+		r.Post("/sign-up", api.Auth.SignUp)
+		r.Post("/sign-in", api.Auth.SignIn)
+		r.With(auth).Delete("/logout", api.Auth.Logout)
 
-		r.Post("/create", auth(api.Task.Create))
-		r.Put("/edit", auth(api.Task.Edit))
-		r.Get("/task/{id}", auth(api.Task.TaskByID))
-		r.Delete("/delete/{id}", auth(api.Task.Delete))
-		r.Get("/tasks", auth(api.Task.GetTasks))
+		r.With(auth).Post("/create", api.Task.Create)
+		r.With(auth).Put("/edit", api.Task.Edit)
+		r.With(auth).Get("/task/{id}", api.Task.TaskByID)
+		r.With(auth).Delete("/delete/{id}", api.Task.Delete)
+		r.With(auth).Get("/tasks", api.Task.GetTasks)
 
 		http.Handle("/api/", http.StripPrefix("/api", r))
 	}
@@ -68,26 +68,26 @@ func main() {
 	// UI Routes
 	{
 		ui := ui2.New(srv)
-		auth := ui.User.Authorization
+		auth := ui.Auth.Authorization
 
 		r := chi.NewRouter()
 		r.Handle("/", http.StripPrefix("/", r))
 
-		r.Get("/sign-up", ui.User.SignUp)
-		r.Post("/sign-up", ui.User.SignUpPost)
-		r.Get("/sign-in", ui.User.SignIn)
-		r.Post("/sign-in", ui.User.SignInPost)
-		r.Delete("/logout", auth(ui.User.Logout))
+		r.Get("/sign-up", ui.Auth.SignUp)
+		r.Post("/sign-up", ui.Auth.SignUpPost)
+		r.Get("/sign-in", ui.Auth.SignIn)
+		r.Post("/sign-in", ui.Auth.SignInPost)
+		r.With(auth).Delete("/logout", ui.Auth.Logout)
 
-		r.Get("/", auth(ui.HomePage))
+		r.With(auth).Get("/", ui.HomePage)
 
-		r.Get("/create", auth(ui.Task.Create))
-		r.Post("/create", auth(ui.Task.CreatePost))
-		r.Get("/edit/{id}", auth(ui.Task.Edit))
-		r.Put("/edit/{id}", auth(ui.Task.EditPost))
-		r.Delete("/delete/{id}", auth(ui.Task.Delete))
-		r.Put("/mark/{id}/{status}", auth(ui.Task.MarkAsDone))
-		r.Get("/search/{search}", auth(ui.Task.Search))
+		r.With(auth).Get("/create", ui.Task.Create)
+		r.With(auth).Post("/create", ui.Task.CreatePost)
+		r.With(auth).Get("/edit/{id}", ui.Task.Edit)
+		r.With(auth).Put("/edit/{id}", ui.Task.EditPost)
+		r.With(auth).Delete("/delete/{id}", ui.Task.Delete)
+		r.With(auth).Put("/mark/{id}/{status}", ui.Task.MarkAsDone)
+		r.With(auth).Get("/search/{search}", ui.Task.Search)
 	}
 
 	if err = http.ListenAndServe(":"+cfg.HTTP.Port, nil); err != nil {

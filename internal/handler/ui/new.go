@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"ToDoWithKolya/internal/handler/ui/auth"
 	"ToDoWithKolya/internal/handler/ui/errs"
 	"ToDoWithKolya/internal/handler/ui/tasks"
 	"ToDoWithKolya/internal/handler/ui/users"
@@ -14,6 +15,7 @@ import (
 type Handler struct {
 	Task tasks.Handler
 	User users.Handler
+	Auth auth.Handler
 
 	Home *template.Template
 	srv  *service.Service
@@ -26,8 +28,9 @@ func New(srv *service.Service) Handler {
 	}
 
 	return Handler{
-		Task: tasks.New(srv.Tasks),
-		User: users.New(srv.Users),
+		Task: tasks.New(srv.Task),
+		User: users.New(srv.User),
+		Auth: auth.New(srv.Auth),
 
 		Home: home,
 		srv:  srv,
@@ -41,7 +44,7 @@ func (h Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tasks, err := h.srv.Tasks.GetTasks(r.Context(), user.ID)
+	tasks, err := h.srv.Task.GetTasks(r.Context(), user.ID)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
