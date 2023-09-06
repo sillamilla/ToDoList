@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"ToDoWithKolya/internal/models"
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -11,9 +12,9 @@ import (
 type Repo interface {
 	Upsert(ctx context.Context, userID, session string, now time.Time) error
 	GetUserID(ctx context.Context, session string) (string, error)
-	GetSessionTime(ctx context.Context, session string) (time.Time, error)
 
 	Delete(ctx context.Context, session string) error
+	SessionInfo(ctx context.Context, session string) (models.SessionInfo, error)
 }
 
 type sessions struct {
@@ -24,12 +25,6 @@ func New(database *mongo.Database) Repo {
 	return sessions{
 		db: database.Collection("sessions"),
 	}
-}
-
-type Session struct {
-	SessionID string    `bson:"session"`
-	UserID    string    `bson:"user_id"`
-	CreatedAt time.Time `bson:"created_at"`
 }
 
 func (r sessions) Upsert(ctx context.Context, userID, session string, now time.Time) error {
@@ -56,16 +51,17 @@ func (r sessions) GetUserID(ctx context.Context, session string) (string, error)
 	return id, nil
 }
 
-func (r sessions) GetSessionTime(ctx context.Context, session string) (time.Time, error) {
-	var sessionInfo Session
+func (r sessions) SessionInfo(ctx context.Context, session string) (models.SessionInfo, error) {
+	var sessionInfo models.SessionInfo
+
 	filter := bson.M{"session": session}
 
 	err := r.db.FindOne(ctx, filter).Decode(&sessionInfo)
 	if err != nil {
-		return time.Time{}, err
+		return models.SessionInfo{}, err
 	}
 
-	return sessionInfo.CreatedAt, nil
+	return sessionInfo, nil
 }
 
 func (r sessions) Delete(ctx context.Context, id string) error {

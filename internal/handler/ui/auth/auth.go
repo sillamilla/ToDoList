@@ -14,9 +14,9 @@ import (
 )
 
 type Handler struct {
-	auth   auth.Service
-	signUp *template.Template
-	signIn *template.Template
+	auth           auth.Service
+	signUpTemplate *template.Template
+	signInTemplate *template.Template
 }
 
 func New(service auth.Service) Handler {
@@ -29,15 +29,15 @@ func New(service auth.Service) Handler {
 		panic(err)
 	}
 	return Handler{
-		auth:   service,
-		signUp: signUp,
-		signIn: signIn,
+		auth:           service,
+		signUpTemplate: signUp,
+		signInTemplate: signIn,
 	}
 }
 
 func (h Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	validationErr := chi.URLParam(r, "status")
-	err := h.signUp.Execute(w, validationErr)
+	err := h.signUpTemplate.Execute(w, validationErr)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
@@ -81,7 +81,7 @@ func (h Handler) SignUpPost(w http.ResponseWriter, r *http.Request) {
 
 func (h Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 	ok := chi.URLParam(r, "status")
-	err := h.signIn.Execute(w, ok)
+	err := h.signInTemplate.Execute(w, ok)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return

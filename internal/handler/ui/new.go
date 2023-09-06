@@ -17,8 +17,8 @@ type Handler struct {
 	User users.Handler
 	Auth auth.Handler
 
-	Home *template.Template
-	srv  *service.Service
+	HomeTemplate *template.Template
+	srv          *service.Service
 }
 
 func New(srv *service.Service) Handler {
@@ -32,8 +32,8 @@ func New(srv *service.Service) Handler {
 		User: users.New(srv.User),
 		Auth: auth.New(srv.Auth),
 
-		Home: home,
-		srv:  srv,
+		HomeTemplate: home,
+		srv:          srv,
 	}
 }
 
@@ -62,7 +62,7 @@ func (h Handler) HomePage(w http.ResponseWriter, r *http.Request) {
 		Tasks: tasks,
 	}
 
-	err = h.Home.Execute(w, userAndTask)
+	err = h.HomeTemplate.Execute(w, userAndTask)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
