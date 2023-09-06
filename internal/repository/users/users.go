@@ -11,6 +11,7 @@ type Repo interface {
 	Create(ctx context.Context, user models.User) error
 	IsUsernameExist(ctx context.Context, userName string) (bool, error) //todo check
 	GetByUsername(ctx context.Context, username string) (models.User, error)
+	GetByID(ctx context.Context, id string) (models.User, error)
 }
 
 type users struct {
@@ -44,6 +45,18 @@ func (r users) GetByUsername(ctx context.Context, username string) (models.User,
 	var user models.User
 
 	filter := bson.M{"username": username}
+	err := r.db.FindOne(ctx, filter).Decode(&user)
+	if err != nil {
+		return models.User{}, err
+	}
+
+	return user, nil
+}
+
+func (r users) GetByID(ctx context.Context, id string) (models.User, error) {
+	var user models.User
+
+	filter := bson.M{"id": id}
 	err := r.db.FindOne(ctx, filter).Decode(&user)
 	if err != nil {
 		return models.User{}, err

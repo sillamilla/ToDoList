@@ -4,18 +4,21 @@ import (
 	"ToDoWithKolya/internal/handler/ui/errs"
 	"ToDoWithKolya/internal/models"
 	"ToDoWithKolya/internal/service/tasks"
-	"fmt"
+	"errors"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"html/template"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type Handler struct {
-	srv    tasks.Service
-	create *template.Template
-	edit   *template.Template
-	home   *template.Template
+	srv            tasks.Service
+	createTemplate *template.Template
+	editTemplate   *template.Template
+	searchTemplate *template.Template
+	homeTemplate   *template.Template
 }
 
 func New(service tasks.Service) Handler {
@@ -27,22 +30,26 @@ func New(service tasks.Service) Handler {
 	if err != nil {
 		panic(err)
 	}
+	search, err := template.ParseFiles("./internal/templates/tasks/search.html")
+	if err != nil {
+		panic(err)
+	}
 	home, err := template.ParseFiles("./internal/templates/home.html")
 	if err != nil {
 		panic(err)
 	}
 
 	return Handler{
-		srv:    service,
-		create: create,
-		edit:   edit,
-		home:   home,
+		srv:            service,
+		createTemplate: create,
+		editTemplate:   edit,
+		searchTemplate: search,
+		homeTemplate:   home,
 	}
 }
 
 func (h Handler) Create(w http.ResponseWriter, r *http.Request) {
-	validationErr := chi.URLParam(r, "status")
-	err := h.create.Execute(w, validationErr)
+	err := h.createTemplate.Execute(w, nil)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
@@ -50,21 +57,22 @@ func (h Handler) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value("user").(models.User)
+	id, ok := r.Context().Value("id").(string)
 	if !ok {
-		errs.HandleError(w, fmt.Errorf("user from ctx"), http.StatusInternalServerError)
+		errs.HandleError(w, nil, http.StatusInternalServerError)
 		return
 	}
 
-	newTask := models.Task{
-		ID:          user.ID,
+	newTask := models.Task{ //todo do in service
+		ID:          uuid.NewString(),
+		UserID:      id,
 		Title:       r.FormValue("title"),
 		Description: r.FormValue("description"),
+		CreatedAt:   time.Now(),
 	}
 
 	if validatorErr := errs.Validate(newTask); validatorErr != "" {
-		link := fmt.Sprintf("/create?status=%s", validatorErr)
-		http.Redirect(w, r, link, http.StatusSeeOther)
+		errs.HandleError(w, errors.New(validatorErr), http.StatusBadRequest)
 		return
 	}
 
@@ -78,26 +86,20 @@ func (h Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) Search(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value("user").(models.User)
+	id, ok := r.Context().Value("id").(string)
 	if !ok {
-		http.Redirect(w, r, "/sign-in", http.StatusSeeOther)
+		errs.HandleError(w, nil, http.StatusInternalServerError)
 		return
 	}
 
-	params := chi.URLParam(r, "search")
-	tasks, err := h.srv.SearchTasks(r.Context(), params, user.ID)
+	taskName := chi.URLParam(r, "search")
+	tasks, err := h.srv.SearchTasks(r.Context(), taskName, id)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	//todo wtf
-	userAndTask := models.UserAndTask{
-		User:  user,
-		Tasks: tasks,
-	}
-
-	err = h.home.Execute(w, userAndTask)
+	err = h.searchTemplate.Execute(w, tasks)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
@@ -122,14 +124,9 @@ func (h Handler) MarkAsDone(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value("user").(models.User)
-	if !ok {
-		errs.HandleError(w, fmt.Errorf("user from context"), http.StatusInternalServerError)
-		return
-	}
+	taskID := chi.URLParam(r, "id")
 
-	id := chi.URLParam(r, "id")
-	err := h.srv.Delete(r.Context(), id, user.ID)
+	err := h.srv.Delete(r.Context(), taskID)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
@@ -139,20 +136,14 @@ func (h Handler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value("user").(models.User)
-	if !ok {
-		errs.HandleError(w, fmt.Errorf("user from context"), http.StatusInternalServerError)
-		return
-	}
-
-	id := chi.URLParam(r, "id")
-	task, err := h.srv.GetByID(r.Context(), user.ID, id)
+	taskID := chi.URLParam(r, "id")
+	task, err := h.srv.GetByID(r.Context(), taskID)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	err = h.edit.Execute(w, task)
+	err = h.editTemplate.Execute(w, task)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
@@ -161,16 +152,15 @@ func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
 
 func (h Handler) EditPost(w http.ResponseWriter, r *http.Request) {
 	updatedTask := models.Task{
+		ID:          chi.URLParam(r, "id"),
 		Title:       r.FormValue("title"),
 		Description: r.FormValue("description"),
 	}
 
-	//todo check
-	//if validatorErr := errs.Validate(updatedTask); validatorErr != "" {
-	//	link := fmt.Sprintf("/edit/{id}?status=%s", validatorErr)
-	//	http.Redirect(w, r, link, http.StatusSeeOther)
-	//	return
-	//}
+	if validatorErr := errs.Validate(updatedTask); validatorErr != "" {
+		errs.HandleError(w, errors.New(validatorErr), http.StatusBadRequest)
+		return
+	}
 
 	err := h.srv.Edit(r.Context(), updatedTask)
 	if err != nil {

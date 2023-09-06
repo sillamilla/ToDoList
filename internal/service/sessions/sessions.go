@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"ToDoWithKolya/internal/models"
 	"ToDoWithKolya/internal/repository/sessions"
 	"context"
 	"github.com/pkg/errors"
@@ -10,6 +11,7 @@ import (
 type Service interface {
 	GetUserID(ctx context.Context, session string) (string, error)
 	CreateOrUpdate(ctx context.Context, userID, session string) error
+	GetSessionInfo(ctx context.Context, session string) (models.SessionInfo, error)
 	LastActiveExpired(ctx context.Context, session string) (bool, error)
 	Logout(ctx context.Context, session string) error
 }
@@ -32,15 +34,26 @@ func (s sessionService) GetUserID(ctx context.Context, session string) (string, 
 
 	return id, nil
 }
+func (s sessionService) GetSessionInfo(ctx context.Context, session string) (models.SessionInfo, error) {
+	const op = "sessionService.GetSessionInfo"
+
+	info, err := s.repo.SessionInfo(ctx, session)
+	if err != nil {
+		return models.SessionInfo{}, errors.Wrap(err, op)
+	}
+
+	return info, nil
+}
+
 func (s sessionService) LastActiveExpired(ctx context.Context, session string) (bool, error) {
 	const op = "sessionService.LastActiveExpired"
 
-	lastActive, err := s.repo.GetSessionTime(ctx, session)
+	info, err := s.repo.SessionInfo(ctx, session)
 	if err != nil {
 		return true, errors.Wrap(err, op)
 	}
 
-	sessionExpireTime := lastActive.Add(170 * time.Hour)
+	sessionExpireTime := info.CreatedAt.Add(170 * time.Hour)
 	if sessionExpireTime.Before(time.Now()) {
 		return true, nil
 	}

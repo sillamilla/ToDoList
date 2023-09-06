@@ -14,9 +14,9 @@ import (
 )
 
 type Handler struct {
-	auth   auth.Service
-	signUp *template.Template
-	signIn *template.Template
+	auth           auth.Service
+	signUpTemplate *template.Template
+	signInTemplate *template.Template
 }
 
 func New(service auth.Service) Handler {
@@ -29,15 +29,15 @@ func New(service auth.Service) Handler {
 		panic(err)
 	}
 	return Handler{
-		auth:   service,
-		signUp: signUp,
-		signIn: signIn,
+		auth:           service,
+		signUpTemplate: signUp,
+		signInTemplate: signIn,
 	}
 }
 
 func (h Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	validationErr := chi.URLParam(r, "status")
-	err := h.signUp.Execute(w, validationErr)
+	err := h.signUpTemplate.Execute(w, validationErr)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
@@ -57,12 +57,6 @@ func (h Handler) SignUpPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//ok, _ := h.auth.IsUsernameAvailable(r.Context(), userInput.Username) //todo check already do inside sign up
-	//if ok {
-	//	http.Redirect(w, r, "/sign-up?status=this user already exist", http.StatusSeeOther)
-	//	return
-	//}
-
 	user, err := h.auth.SignUp(r.Context(), userInput)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
@@ -81,7 +75,7 @@ func (h Handler) SignUpPost(w http.ResponseWriter, r *http.Request) {
 
 func (h Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 	ok := chi.URLParam(r, "status")
-	err := h.signIn.Execute(w, ok)
+	err := h.signInTemplate.Execute(w, ok)
 	if err != nil {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
@@ -126,6 +120,7 @@ func (h Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		errs.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
+	//todo if dont have it user not logout from base
 
 	err = h.auth.Logout(r.Context(), session.Value)
 	if err != nil {

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Задачи</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white">
+
+<div class="container mx-auto p-4">
+  {{range .}}
+  <div class="mt-4 max-w-2xl mx-auto">
+    <div class="bg-gray-700 rounded-md shadow-lg shadow-2xl">
+      <div class="p-4 mb-2">
+
+        <div class="flex my-2">
+          <div class="h-4 w-4 bg-red-500 rounded-full mr-1">
+            <label for="delete_button_{{.ID}}" class="cursor-pointer flex items-center h-full w-full">
+              <a href="/delete/{{.ID}}" class="w-full h-full">
+                <input type="checkbox" id="delete_button_{{.ID}}" class="hidden" name="delete_button"
+                       task-id="{{.ID}}">
+              </a>
+            </label>
+          </div>
+
+          <div class="h-4 w-4 bg-yellow-500 rounded-full mr-1">
+            <label for="edit_button_{{.ID}}" class="cursor-pointer flex items-center h-full w-full">
+              <a href="/edit/{{.ID}}" class="w-full h-full">
+                <input type="checkbox" id="edit_button_{{.ID}}" class="hidden" name="edit_button"
+                       task-id="{{.ID}}">
+              </a>
+            </label>
+          </div>
+
+          <div class="h-4 w-4 bg-green-500 rounded-full mr-1">
+            <label for="is_pined_{{.ID}}" class="cursor-pointer flex items-center h-full w-full">
+              <input type="checkbox" id="is_pined_{{.ID}}" class="hidden" name="is_pined"
+                     {{if .IsDone}}checked{{end}} task-id="{{.ID}}">
+              <span class="text-white"></span>
+            </label>
+          </div>
+
+          <div class="ml-auto items-center">
+            <div class="text-gray-400">{{ .CreatedAt.Format "2006-01-02" }}</div>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-md shadow-md mb-1 p-4 relative">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <span class="text-lg font-medium">{{.Title}}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between mt-2">
+            <p class="text-gray-400">{{.Description}}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {{end}}
+  <div class="mt-4 max-w-2xl mx-auto">
+    <div class="flex justify-center items-center space-x-4 mt-4">
+      <a href="/" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-md transition duration-200 font-medium">Back</a>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

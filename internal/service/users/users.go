@@ -12,6 +12,7 @@ type Service interface {
 	Create(ctx context.Context, user models.User) error
 	IsUsernameAvailable(ctx context.Context, username string) (bool, error)
 	GetByUsername(ctx context.Context, username string) (models.User, error)
+	GetByID(ctx context.Context, id string) (models.User, error)
 }
 
 type userService struct {
@@ -43,6 +44,19 @@ func (s userService) GetByUsername(ctx context.Context, username string) (models
 	}
 
 	return byUsername, nil
+}
+
+func (s userService) GetByID(ctx context.Context, id string) (models.User, error) {
+	const op = "userService.GetByID"
+
+	byID, err := s.repo.GetByID(ctx, id)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return models.User{}, errors.Wrap(err, "User not found")
+	} else if err != nil {
+		return models.User{}, errors.Wrap(err, op)
+	}
+
+	return byID, nil
 }
 
 func (s userService) IsUsernameAvailable(ctx context.Context, username string) (bool, error) {

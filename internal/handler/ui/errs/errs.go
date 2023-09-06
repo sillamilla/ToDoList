@@ -36,7 +36,7 @@ func Validate(v helper.Validator) string {
 	if errs := v.Validate(); len(errs) != 0 {
 		var validatorTextErr string
 		for _, text := range errs {
-			validatorTextErr += fmt.Sprintf("%s", text)
+			validatorTextErr += fmt.Sprintf("%s ", text)
 		}
 
 		return validatorTextErr

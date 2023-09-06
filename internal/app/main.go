@@ -47,18 +47,19 @@ func main() {
 	// API Routes
 	api := api.New(srv)
 	apiAuth := api.Auth.Authorization
-
 	router := chi.NewRouter()
+
 	router.Route("/api", func(r chi.Router) {
 		r.Post("/sign-up", api.Auth.SignUp)
 		r.Post("/sign-in", api.Auth.SignIn)
 
-		r.With(apiAuth).Delete("/logout", api.Auth.Logout)
-		r.With(apiAuth).Post("/create", api.Task.Create)
-		r.With(apiAuth).Put("/edit", api.Task.Edit)
-		r.With(apiAuth).Get("/task/{id}", api.Task.TaskByID)
-		r.With(apiAuth).Delete("/delete/{id}", api.Task.Delete)
-		r.With(apiAuth).Get("/tasks", api.Task.GetTasks)
+		authRouter := r.With(apiAuth)
+		authRouter.Delete("/logout", api.Auth.Logout)
+		authRouter.Post("/create", api.Task.Create)
+		authRouter.Post("/edit", api.Task.Edit)
+		authRouter.Get("/task/{id}", api.Task.TaskByID)
+		authRouter.Delete("/delete/{id}", api.Task.Delete)
+		authRouter.Get("/tasks", api.Task.GetTasks)
 	})
 
 	// UI Routes
@@ -71,15 +72,16 @@ func main() {
 		r.Get("/sign-in", ui.Auth.SignIn)
 		r.Post("/sign-in", ui.Auth.SignInPost)
 
-		r.With(auth).Delete("/logout", ui.Auth.Logout)
-		r.With(auth).Get("/", ui.HomePage)
-		r.With(auth).Get("/create", ui.Task.Create)
-		r.With(auth).Post("/create", ui.Task.CreatePost)
-		r.With(auth).Get("/edit/{id}", ui.Task.Edit)
-		r.With(auth).Put("/edit/{id}", ui.Task.EditPost)
-		r.With(auth).Delete("/delete/{id}", ui.Task.Delete)
-		r.With(auth).Put("/mark/{id}/{status}", ui.Task.MarkAsDone)
-		r.With(auth).Get("/search/{search}", ui.Task.Search)
+		authRouter := r.With(auth)
+		authRouter.Get("/logout", ui.Auth.Logout)
+		authRouter.Get("/", ui.HomePage)
+		authRouter.Get("/create", ui.Task.Create)
+		authRouter.Post("/create", ui.Task.CreatePost)
+		authRouter.Get("/edit/{id}", ui.Task.Edit)
+		authRouter.Post("/edit/{id}", ui.Task.EditPost)
+		authRouter.Get("/delete/{id}", ui.Task.Delete)
+		authRouter.Get("/mark/{id}/{status}", ui.Task.MarkAsDone)
+		authRouter.Get("/search/{search}", ui.Task.Search)
 	})
 
 	if err = http.ListenAndServe(":"+cfg.HTTP.Port, router); err != nil {

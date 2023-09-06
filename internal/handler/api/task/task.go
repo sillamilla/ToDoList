@@ -45,7 +45,6 @@ func (h Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//todo wrong session error
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -72,14 +71,9 @@ func (h Handler) Edit(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) TaskByID(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value("user").(models.User)
-	if !ok {
-		helper.SendError(w, http.StatusUnauthorized, fmt.Sprintf("user not found in ctx"))
-		return
-	}
 
 	id := chi.URLParam(r, "id")
-	task, err := h.srv.GetByID(r.Context(), user.ID, id)
+	task, err := h.srv.GetByID(r.Context(), id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			helper.SendError(w, http.StatusNotFound, fmt.Sprintf("tasks doesnt exist, err: %w", err))
@@ -96,14 +90,9 @@ func (h Handler) TaskByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	user, ok := r.Context().Value("user").(models.User)
-	if !ok {
-		helper.SendError(w, http.StatusBadRequest, fmt.Sprintf("user not found in ctx"))
-		return
-	}
 
 	id := chi.URLParam(r, "id")
-	err := h.srv.Delete(r.Context(), user.ID, id)
+	err := h.srv.Delete(r.Context(), id)
 	if err != nil {
 		helper.SendError(w, http.StatusInternalServerError, fmt.Sprintf("delete tasks by id, err: %", err))
 		return
