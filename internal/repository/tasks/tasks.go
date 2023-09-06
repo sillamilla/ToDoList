@@ -96,7 +96,7 @@ func (r tasks) Get(ctx context.Context, userID, id string) (models.Task, error) 
 func (r tasks) MarkValueSet(ctx context.Context, taskID string, status int) error {
 	filter := bson.M{"id": taskID}
 	update := bson.M{"$set": bson.M{"isDone": status}}
-
+	//todo why only by task id
 	_, err := r.db.UpdateOne(ctx, filter, update)
 	if err != nil {
 		return err

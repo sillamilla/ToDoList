@@ -11,3 +11,11 @@ type Handler struct {
 func New(service users.Service) Handler {
 	return Handler{srv: service}
 }
+
+func GetMe() {
+
+}
+
+func FollowOther() {
+
+}

@@ -45,49 +45,44 @@ func main() {
 	srv := service.New(repo)
 
 	// API Routes
-	{
-		api := api.New(srv)
-		auth := api.Auth.Authorization
+	api := api.New(srv)
+	apiAuth := api.Auth.Authorization
 
-		r := chi.NewRouter()
-		r.Group(func(r chi.Router) {
-			http.Handle("/api/", http.StripPrefix("/api", r))
-			r.Post("/sign-up", api.Auth.SignUp)
-			r.Post("/sign-in", api.Auth.SignIn)
-			r.With(auth).Delete("/logout", api.Auth.Logout)
-			r.With(auth).Post("/create", api.Task.Create)
-			r.With(auth).Put("/edit", api.Task.Edit)
-			r.With(auth).Get("/task/{id}", api.Task.TaskByID)
-			r.With(auth).Delete("/delete/{id}", api.Task.Delete)
-			r.With(auth).Get("/tasks", api.Task.GetTasks)
-		})
-	}
+	router := chi.NewRouter()
+	router.Route("/api", func(r chi.Router) {
+		r.Post("/sign-up", api.Auth.SignUp)
+		r.Post("/sign-in", api.Auth.SignIn)
+
+		r.With(apiAuth).Delete("/logout", api.Auth.Logout)
+		r.With(apiAuth).Post("/create", api.Task.Create)
+		r.With(apiAuth).Put("/edit", api.Task.Edit)
+		r.With(apiAuth).Get("/task/{id}", api.Task.TaskByID)
+		r.With(apiAuth).Delete("/delete/{id}", api.Task.Delete)
+		r.With(apiAuth).Get("/tasks", api.Task.GetTasks)
+	})
 
 	// UI Routes
-	{
-		ui := ui2.New(srv)
-		auth := ui.Auth.Authorization
+	ui := ui2.New(srv)
+	auth := ui.Auth.Authorization
 
-		r := chi.NewRouter()
-		http.Handle("/", r)
-		r.Group(func(r chi.Router) {
-			r.Get("/sign-up", ui.Auth.SignUp)
-			r.Post("/sign-up", ui.Auth.SignUpPost)
-			r.Get("/sign-in", ui.Auth.SignIn)
-			r.Post("/sign-in", ui.Auth.SignInPost)
-			r.With(auth).Delete("/logout", ui.Auth.Logout)
-			r.With(auth).Get("/", ui.HomePage)
-			r.With(auth).Get("/create", ui.Task.Create)
-			r.With(auth).Post("/create", ui.Task.CreatePost)
-			r.With(auth).Get("/edit/{id}", ui.Task.Edit)
-			r.With(auth).Put("/edit/{id}", ui.Task.EditPost)
-			r.With(auth).Delete("/delete/{id}", ui.Task.Delete)
-			r.With(auth).Put("/mark/{id}/{status}", ui.Task.MarkAsDone)
-			r.With(auth).Get("/search/{search}", ui.Task.Search)
-		})
-	}
+	router.Route("/", func(r chi.Router) {
+		r.Get("/sign-up", ui.Auth.SignUp)
+		r.Post("/sign-up", ui.Auth.SignUpPost)
+		r.Get("/sign-in", ui.Auth.SignIn)
+		r.Post("/sign-in", ui.Auth.SignInPost)
 
-	if err = http.ListenAndServe(":"+cfg.HTTP.Port, nil); err != nil {
+		r.With(auth).Delete("/logout", ui.Auth.Logout)
+		r.With(auth).Get("/", ui.HomePage)
+		r.With(auth).Get("/create", ui.Task.Create)
+		r.With(auth).Post("/create", ui.Task.CreatePost)
+		r.With(auth).Get("/edit/{id}", ui.Task.Edit)
+		r.With(auth).Put("/edit/{id}", ui.Task.EditPost)
+		r.With(auth).Delete("/delete/{id}", ui.Task.Delete)
+		r.With(auth).Put("/mark/{id}/{status}", ui.Task.MarkAsDone)
+		r.With(auth).Get("/search/{search}", ui.Task.Search)
+	})
+
+	if err = http.ListenAndServe(":"+cfg.HTTP.Port, router); err != nil {
 		log.Fatal(err)
 	}
 
