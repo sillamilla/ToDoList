@@ -48,7 +48,7 @@ func (s sessionService) GetSessionInfo(ctx context.Context, session string) (mod
 func (s sessionService) LastActiveExpired(ctx context.Context, session string) (bool, error) {
 	const op = "sessionService.LastActiveExpired"
 
-	info, err := s.repo.SessionInfo(ctx, session)
+	lastActive, err := s.repo.GetSessionTime(ctx, session)
 	if err != nil {
 		return true, errors.Wrap(err, op)
 	}
