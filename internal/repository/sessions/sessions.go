@@ -64,8 +64,8 @@ func (r sessions) SessionInfo(ctx context.Context, session string) (models.Sessi
 	return sessionInfo, nil
 }
 
-func (r sessions) Delete(ctx context.Context, id string) error {
-	_, err := r.db.DeleteMany(ctx, bson.M{"user_id": id})
+func (r sessions) Delete(ctx context.Context, session string) error {
+	_, err := r.db.DeleteMany(ctx, bson.M{"session": session})
 	if err != nil {
 		return err
 	}

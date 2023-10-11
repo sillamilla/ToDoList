@@ -18,7 +18,6 @@ type Service interface {
 	SignIn(ctx context.Context, req models.UserInput) (models.User, error)
 	Logout(ctx context.Context, session string) error
 	GetSessionInfo(ctx context.Context, session string) (models.SessionInfo, error)
-	LastActiveExpired(ctx context.Context, session string) (bool, error)
 }
 
 type auth struct {
@@ -114,17 +113,6 @@ func (a auth) GetSessionInfo(ctx context.Context, session string) (models.Sessio
 	}
 
 	return info, nil
-}
-
-func (a auth) LastActiveExpired(ctx context.Context, session string) (bool, error) {
-	const op = "auth.LastActiveExpired"
-
-	lastActive, err := a.sessionSrv.LastActiveExpired(ctx, session)
-	if err != nil {
-		return true, errors.Wrap(err, op)
-	}
-
-	return lastActive, nil
 }
 
 func (a auth) Logout(ctx context.Context, session string) error {

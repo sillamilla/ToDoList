@@ -2,8 +2,8 @@ package auth
 
 import (
 	"context"
-	"github.com/pkg/errors"
 	"net/http"
+	"time"
 )
 
 func (h Handler) Authorization(next http.Handler) http.Handler {
@@ -14,25 +14,21 @@ func (h Handler) Authorization(next http.Handler) http.Handler {
 			return
 		}
 
-		ok, err := h.auth.LastActiveExpired(r.Context(), session.Value) //todo forever new, and not expired
-		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		if ok {
+		info, err := h.auth.GetSessionInfo(r.Context(), session.Value)
+		if err != nil || info.UserID == "" {
 			h.Logout(w, r)
 			http.Redirect(w, r, "/sign-in", http.StatusPermanentRedirect)
 			return
 		}
 
-		sessionInfo, err := h.auth.GetSessionInfo(r.Context(), session.Value)
-		if err != nil || sessionInfo.UserID == "" {
+		sessionExpireTime := info.CreatedAt.Add(170 * time.Hour)
+		if sessionExpireTime.Before(time.Now()) {
 			h.Logout(w, r)
 			http.Redirect(w, r, "/sign-in", http.StatusPermanentRedirect)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "id", sessionInfo.UserID)
+		ctx := context.WithValue(r.Context(), "id", info.UserID)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

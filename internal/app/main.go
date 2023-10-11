@@ -73,7 +73,7 @@ func main() {
 		r.Post("/sign-in", ui.Auth.SignInPost)
 
 		authRouter := r.With(auth)
-		authRouter.Get("/logout", ui.Auth.Logout)
+		authRouter.Post("/logout", ui.Auth.Logout)
 		authRouter.Get("/", ui.HomePage)
 		authRouter.Get("/create", ui.Task.Create)
 		authRouter.Post("/create", ui.Task.CreatePost)
